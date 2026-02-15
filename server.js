@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const axios = require('axios');
 const Worker = require('./models/Worker'); 
 require('dotenv').config();
 
 const app = express();
 const PORT = 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -16,75 +16,55 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch(err => console.log("❌ DB Error:", err));
 
-// --- ROUTES ---
+// --- INTERNAL LOCAL OTP MECHANISM ---
+let localOtpStore = {}; 
 
-// 1. GET all workers
-app.get('/api/workers', async (req, res) => {
-    try {
-        const workers = await Worker.find();
-        res.json(workers);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+app.post('/api/request-otp', (req, res) => {
+    const { identifier } = req.body;
+    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    localOtpStore[identifier] = generatedOtp;
+
+    // SIMULATE DELIVERY: Check your terminal for this box!
+    console.log(`\n=========================================`);
+    console.log(`🔐 NEW OTP REQUEST FOR: ${identifier}`);
+    console.log(`👉 YOUR LOGIN CODE IS: [ ${generatedOtp} ]`);
+    console.log(`=========================================\n`);
+
+    res.json({ success: true, message: "Check your server terminal for the code!" });
+});
+
+app.post('/api/verify-otp', (req, res) => {
+    const { identifier, otp } = req.body;
+    if (localOtpStore[identifier] && localOtpStore[identifier] === otp) {
+        delete localOtpStore[identifier]; 
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 });
 
-// 2. POST (Register) a new worker
-app.post('/api/workers', async (req, res) => {
+// --- PRIVACY-FILTERED PROFILE ROUTE ---
+app.get('/api/workers/me/:identifier', async (req, res) => {
+    const { identifier } = req.params;
     try {
-        console.log("Data received:", req.body); // This will show in your terminal
-        const newWorker = new Worker(req.body);
-        const savedWorker = await newWorker.save();
-        res.status(201).json(savedWorker);
+        // Find worker matching email OR mobile for privacy
+        const worker = await Worker.findOne({
+            $or: [{ email: identifier }, { mobile: identifier }]
+        });
+        if (!worker) return res.status(404).json({ message: "No record found." });
+        res.json(worker);
     } catch (err) {
-        console.error("Post Error:", err.message);
-        res.status(400).json({ error: err.message });
+        res.status(500).json({ error: "Server error fetching profile." });
     }
 });
-
-// 3. Home Route
-app.get('/', (req, res) => {
-    res.send('Sahayadri Server is running!');
-});
-
-// UPDATE a worker record
-app.get('/api/workers/:id', async (req, res) => {
-    const worker = await Worker.findById(req.params.id);
-    res.json(worker);
-});
-
-app.put('/api/workers/:id', async (req, res) => {
-    try {
-        const updatedWorker = await Worker.findByIdAndUpdate(
-            req.params.id, 
-            req.body, 
-            { new: true } // This returns the updated version
-        );
-        res.json(updatedWorker);
-    } catch (err) {
-        res.status(400).json({ error: "Update failed" });
-    }
-});
-
-const axios = require('axios');
 
 app.post('/api/evaluate-fitness', async (req, res) => {
     try {
-        const workerData = req.body; // Expects {age, bmi, respiratory_issue, health_score}
-        
-        // Send data to our Python AI Server
-        const response = await axios.post('http://127.0.0.1:5001/predict', workerData);
-        
-        // Return the AI's "Fit" or "Unfit" decision to the frontend
-        res.json({ 
-            success: true, 
-            fitnessStatus: response.data.fitness_status 
-        });
+        const response = await axios.post('http://127.0.0.1:5001/predict', req.body);
+        res.json({ success: true, fitnessStatus: response.data.fitness_status });
     } catch (error) {
-        console.error("AI Server Error:", error.message);
         res.status(500).json({ success: false, message: "AI Analysis failed" });
     }
 });
-// Start Server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+
+app.listen(PORT, () => console.log(`🚀 Privacy-Enabled Server running on port ${PORT}`));

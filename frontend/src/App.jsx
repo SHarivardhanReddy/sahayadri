@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import './App.css'
 
 // Import the components
@@ -9,109 +9,139 @@ import Login from './components/Login'
 import About from './components/About'
 
 function Dashboard() {
-  const [workers, setWorkers] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [editingId, setEditingId] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '', age: '', homeState: '', contactNumber: '', healthHistory: ''
   })
-  const [aiResults, setAiResults] = useState({});
+  const [aiResult, setAiResult] = useState(null);
+  const navigate = useNavigate();
 
-  const fetchWorkers = () => {
-    axios.get('http://localhost:5000/api/workers').then(res => setWorkers(res.data))
+  // Retrieve the identity used at login
+  const identifier = localStorage.getItem('userIdentifier');
+
+  const fetchMyProfile = async () => {
+    if (!identifier) {
+      navigate('/login');
+      return;
+    }
+    try {
+      // Fetch only the matching record for privacy
+      const res = await axios.get(`http://localhost:5000/api/workers/me/${identifier}`);
+      setUserProfile(res.data);
+      // Pre-fill form in case they want to update their own info
+      setFormData({
+        name: res.data.name,
+        age: res.data.age,
+        homeState: res.data.homeState,
+        contactNumber: res.data.contactNumber || res.data.mobile,
+        healthHistory: res.data.healthHistory
+      });
+    } catch (err) {
+      console.error("Profile not found or access denied.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { fetchWorkers() }, [])
+  useEffect(() => { fetchMyProfile() }, [identifier]);
 
-  const handleAIAnalysis = async (worker) => {
+  const handleAIAnalysis = async () => {
     try {
       const res = await axios.post('http://localhost:5000/api/evaluate-fitness', {
-        age: parseInt(worker.age),
+        age: parseInt(userProfile.age),
         bmi: 24.5,
-        respiratory_issue: worker.healthHistory.toLowerCase().includes('asthma') ? 1 : 0,
+        respiratory_issue: userProfile.healthHistory?.toLowerCase().includes('asthma') ? 1 : 0,
         health_score: 85
       });
-      setAiResults(prev => ({ ...prev, [worker._id]: res.data.fitnessStatus }));
+      setAiResult(res.data.fitnessStatus);
     } catch (err) {
       alert("AI Analysis Failed.");
     }
   };
 
-  const handleEdit = (worker) => {
-    setEditingId(worker._id);
-    setFormData({
-      name: worker.name, age: worker.age, homeState: worker.homeState,
-      contactNumber: worker.contactNumber, healthHistory: worker.healthHistory
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault()
     try {
-      if (editingId) {
-        await axios.put(`http://localhost:5000/api/workers/${editingId}`, formData);
-        setEditingId(null);
-        alert("Record Updated!");
-      } else {
-        await axios.post('http://localhost:5000/api/workers', formData);
-        alert("Worker Registered!");
-      }
-      setFormData({ name: '', age: '', homeState: '', contactNumber: '', healthHistory: '' });
-      fetchWorkers();
-    } catch (err) { alert("Action Failed"); }
+      await axios.put(`http://localhost:5000/api/workers/${userProfile._id}`, formData);
+      setEditing(false);
+      alert("Your health record has been updated!");
+      fetchMyProfile();
+    } catch (err) { alert("Update Failed"); }
   }
 
-  const filteredWorkers = workers.filter(w => 
-    w.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    w.homeState.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleLogout = () => {
+    localStorage.removeItem('userIdentifier');
+    navigate('/login');
+  }
+
+  if (loading) return <div className="loading">Verifying credentials...</div>;
 
   return (
     <div className="App">
       <header className="dashboard-header">
-        <h1>Sahayadri Dashboard</h1>
-        <button onClick={() => window.location.href='/'} className="logout-btn">Logout</button>
+        <h1>Sahayadri Staff Portal</h1>
+        <button onClick={handleLogout} className="logout-btn">Secure Logout</button>
       </header>
+
       <div className="main-container">
-        <section className="list-section">
-          <div className="list-header">
-            <h2>Registered Workers ({filteredWorkers.length})</h2>
-            <input type="text" className="search-bar" placeholder="Search workers..." onChange={(e) => setSearchTerm(e.target.value)} />
-          </div>
-          <div className="worker-grid">
-            {filteredWorkers.map(worker => (
-              <div key={worker._id} className="worker-card">
-                <div className="card-content">
-                    <h3>{worker.name}</h3>
-                    <p><strong>State:</strong> {worker.homeState}</p>
-                    <p className="health-box"><strong>Health:</strong> {worker.healthHistory}</p>
-                    {aiResults[worker._id] && (
-                      <div className={`ai-badge ${aiResults[worker._id]}`}>
-                        {aiResults[worker._id] === 'Fit' ? '✅ FIT' : '⚠️ UNFIT'}
-                      </div>
-                    )}
+        {userProfile ? (
+          <>
+            <section className="profile-section">
+              <div className="profile-card-large">
+                <div className="card-header-flex">
+                  <h2>My Health Credentials</h2>
+                  {aiResult && (
+                    <div className={`ai-badge ${aiResult}`}>
+                      AI STATUS: {aiResult.toUpperCase()}
+                    </div>
+                  )}
                 </div>
-                <div className="button-group">
-                  <button className="edit-btn" onClick={() => handleEdit(worker)}>Update</button>
-                  <button className="ai-scan-btn" onClick={() => handleAIAnalysis(worker)}>✨ AI Scan</button>
+
+                <div className="details-grid">
+                  <div className="detail-item"><strong>Name:</strong> {userProfile.name}</div>
+                  <div className="detail-item"><strong>Staff ID:</strong> {userProfile._id.slice(-6).toUpperCase()}</div>
+                  <div className="detail-item"><strong>Home State:</strong> {userProfile.homeState}</div>
+                  <div className="detail-item"><strong>Contact:</strong> {userProfile.mobile || userProfile.contactNumber}</div>
+                </div>
+
+                <div className="health-history-box">
+                  <label>Medical History</label>
+                  <p>{userProfile.healthHistory || "No history recorded."}</p>
+                </div>
+
+                <div className="action-row">
+                  <button className="edit-btn" onClick={() => setEditing(!editing)}>
+                    {editing ? "Cancel Edit" : "Update My Details"}
+                  </button>
+                  <button className="ai-scan-btn" onClick={handleAIAnalysis}>✨ Run AI Fitness Scan</button>
                 </div>
               </div>
-            ))}
+            </section>
+
+            {editing && (
+              <section className="form-section">
+                <div className="form-card">
+                  <h2>Update My Profile</h2>
+                  <form onSubmit={handleUpdate}>
+                    <input type="text" placeholder="Full Name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    <input type="number" placeholder="Age" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} required />
+                    <input type="text" placeholder="Home State" value={formData.homeState} onChange={(e) => setFormData({...formData, homeState: e.target.value})} required />
+                    <textarea placeholder="Medical History" value={formData.healthHistory} onChange={(e) => setFormData({...formData, healthHistory: e.target.value})} rows="4" />
+                    <button type="submit" className="submit-btn">Save Changes</button>
+                  </form>
+                </div>
+              </section>
+            )}
+          </>
+        ) : (
+          <div className="error-container">
+            <h2>Access Restricted</h2>
+            <p>No health record found matching <strong>{identifier}</strong>.</p>
+            <button onClick={() => navigate('/login')}>Return to Login</button>
           </div>
-        </section>
-        <section className="form-section">
-          <div className="form-card">
-            <h2>{editingId ? "Update Record" : "New Registration"}</h2>
-            <form onSubmit={handleSubmit}>
-              <input type="text" placeholder="Full Name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
-              <input type="number" placeholder="Age" value={formData.age} onChange={(e) => setFormData({...formData, age: e.target.value})} required />
-              <input type="text" placeholder="Home State" value={formData.homeState} onChange={(e) => setFormData({...formData, homeState: e.target.value})} required />
-              <input type="text" placeholder="Contact Number" value={formData.contactNumber} onChange={(e) => setFormData({...formData, contactNumber: e.target.value})} required />
-              <textarea placeholder="Medical History" value={formData.healthHistory} onChange={(e) => setFormData({...formData, healthHistory: e.target.value})} rows="4" />
-              <button type="submit" className="submit-btn">{editingId ? "Save Changes" : "Add Record"}</button>
-            </form>
-          </div>
-        </section>
+        )}
       </div>
     </div>
   )

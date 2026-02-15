@@ -1,69 +1,77 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Login = () => {
-  const [loginData, setLoginData] = useState({ email: '', mobile: '' });
+  const [identifier, setIdentifier] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState(1);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleRequestOtp = async (e) => {
     e.preventDefault();
-    // For now, we allow entry if both fields have values
-    if (loginData.email && loginData.mobile) {
-      navigate('/dashboard');
-    } else {
-      alert("Please enter both Email and Mobile Number");
+    try {
+      const res = await axios.post('http://localhost:5000/api/request-otp', { identifier });
+      if (res.data.success) {
+        alert("Developer Note: Check your VS Code Terminal for the 4-digit code!");
+        setStep(2);
+      }
+    } catch (err) {
+      alert("Error: Ensure backend server is running.");
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post('http://localhost:5000/api/verify-otp', { identifier, otp });
+      if (res.data.success) {
+        // Critical: Store identity for the private dashboard
+        localStorage.setItem('userIdentifier', identifier);
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      alert("Invalid Code. Please try again.");
     }
   };
 
   return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#f4f7f6'
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '40px',
-        borderRadius: '10px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <h2 style={{ textAlign: 'center', color: '#2c3e50', marginBottom: '30px' }}>Staff Login</h2>
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#7f8c8d' }}>Email Address</label>
-            <input 
-              type="email" 
-              required
-              style={{ width: '100%', padding: '12px', borderRadius: '5px', border: '1px solid #ddd' }}
-              onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#7f8c8d' }}>Mobile Number</label>
-            <input 
-              type="tel" 
-              required
-              style={{ width: '100%', padding: '12px', borderRadius: '5px', border: '1px solid #ddd' }}
-              onChange={(e) => setLoginData({...loginData, mobile: e.target.value})}
-            />
-          </div>
-          <button type="submit" style={{
-            backgroundColor: '#3498db',
-            color: 'white',
-            padding: '14px',
-            border: 'none',
-            borderRadius: '5px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            marginTop: '10px'
-          }}>
-            Access Dashboard
-          </button>
-        </form>
+    <div className="login-wrapper">
+      <div className="login-card">
+        <div className="login-brand">SAHAYADRI</div>
+        <h2>Staff Authentication</h2>
+        <p className="login-subtitle">Secure access for healthcare personnel</p>
+
+        {step === 1 ? (
+          <form onSubmit={handleRequestOtp}>
+            <div className="input-group">
+              <label>Email or Mobile Number</label>
+              <input 
+                type="text" 
+                placeholder="Enter registered email or mobile"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="login-btn">Generate Verification Code</button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp}>
+            <div className="input-group">
+              <label>Enter 4-Digit OTP</label>
+              <input 
+                type="text" 
+                placeholder="0 0 0 0"
+                maxLength="4"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="login-btn verify">Verify & Access Dashboard</button>
+          </form>
+        )}
       </div>
     </div>
   );
