@@ -65,6 +65,25 @@ app.put('/api/workers/:id', async (req, res) => {
     }
 });
 
+const axios = require('axios');
+
+app.post('/api/evaluate-fitness', async (req, res) => {
+    try {
+        const workerData = req.body; // Expects {age, bmi, respiratory_issue, health_score}
+        
+        // Send data to our Python AI Server
+        const response = await axios.post('http://127.0.0.1:5001/predict', workerData);
+        
+        // Return the AI's "Fit" or "Unfit" decision to the frontend
+        res.json({ 
+            success: true, 
+            fitnessStatus: response.data.fitness_status 
+        });
+    } catch (error) {
+        console.error("AI Server Error:", error.message);
+        res.status(500).json({ success: false, message: "AI Analysis failed" });
+    }
+});
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

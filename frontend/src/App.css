@@ -1,142 +1,141 @@
-/* Resetting default margins */
-body, html {
-  margin: 0;
-  padding: 0;
-  background-color: #eef2f3; /* Light grey background */
-  color: #333;
-}
+/* --- Home Page Revamp Styles --- */
 
-.App {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-header {
-  text-align: center;
-  margin-bottom: 30px;
-  background: #1a5276;
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-}
-
-.main-container {
+/* Fixes the layout to be split-screen */
+.hero-container {
   display: flex;
-  gap: 30px;
+  min-height: calc(100vh - 80px); /* Adjusts for Navbar height */
+  padding: 0 8%;
+  align-items: center;
+  gap: 40px;
+  background: #ffffff;
 }
 
-/* List Side */
-.list-section {
-  flex: 2;
+.hero-left {
+  flex: 1.2;
+  text-align: left;
 }
 
-.list-section h2 { color: #1a5276; }
-
-.worker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
+.hero-right {
+  flex: 0.8;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.worker-card {
-  background: white;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  border-top: 5px solid #27ae60;
-}
-
-.health-box {
-  background: #f9f9f9;
-  padding: 8px;
-  border-radius: 5px;
-  font-size: 0.9em;
-}
-
-/* Form Side */
-.form-section {
-  flex: 1;
-}
-
-.form-card {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-  position: sticky;
-  top: 20px;
-}
-
-form input, form textarea {
+/* Makes the Hero Image look professional and modern */
+.main-hero-img {
   width: 100%;
-  margin-bottom: 12px;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box; /* Fixes input overflow */
+  max-width: 550px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
 }
 
-form button {
-  width: 100%;
-  padding: 12px;
-  background: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
+.main-hero-img:hover {
+  transform: translateY(-10px);
 }
 
-form button:hover { background: #219150; }
+/* Typography and Button Spacing */
+.hero-left h1 {
+  font-size: 3.8rem;
+  line-height: 1.1;
+  color: #1a252f;
+  margin-bottom: 24px;
+}
 
-.list-header {
+.hero-left p {
+  font-size: 1.25rem;
+  color: #5d6d7e;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 20px;
+}
+
+/* Professional Navbar for Home */
+.home-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 20px 8%;
+  background: white;
+}
+
+.nav-login-btn {
+  background: #3498db;
+  color: white;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nav-login-btn:hover {
+  background: #2980b9;
+}
+
+/* New Minimalist About Page Styles */
+.about-wrapper {
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.about-hero-minimal {
+  padding: 80px 10%;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.about-hero-minimal h1 {
+  font-size: 3.5rem;
+  color: #1a252f;
+  margin: 15px 0;
+}
+
+.info-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  padding: 0 10% 80px;
+}
+
+.info-card-modern {
+  padding: 40px;
+  background: #f8fbff;
+  border-radius: 20px;
+  text-align: left;
+  border: 1px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.info-card-modern:hover {
+  background: #ffffff;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  transform: translateY(-5px);
+}
+
+.card-icon {
+  font-size: 2.5rem;
   margin-bottom: 20px;
 }
 
-.search-bar {
-  padding: 10px 15px;
-  width: 250px;
-  border: 2px solid #1a5276;
-  border-radius: 20px;
-  outline: none;
+.about-image-section {
+  display: flex;
+  align-items: center;
+  background: #1a252f;
+  color: white;
+  padding: 80px 10%;
+  gap: 50px;
 }
 
-.search-bar:focus {
-  box-shadow: 0 0 8px rgba(26, 82, 118, 0.3);
-}
-
-.worker-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.edit-btn {
-    background: #3498db;
-    color: white;
-    border: none;
-    padding: 8px;
-    border-radius: 5px;
-    margin-top: 10px;
-    cursor: pointer;
-    font-size: 0.8em;
-}
-
-.edit-btn:hover { background: #2980b9; }
-
-.update-submit-btn { background: #f39c12 !important; }
-
-.cancel-btn {
-    background: #95a5a6;
-    margin-top: 5px;
-    color: white;
-    border: none;
-    padding: 10px;
-    width: 100%;
-    border-radius: 6px;
-    cursor: pointer;
+.image-text { flex: 1; }
+.about-img-wrap { flex: 1; }
+.about-img-wrap img {
+  width: 100%;
+  border-radius: 15px;
 }
