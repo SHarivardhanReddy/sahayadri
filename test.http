@@ -1,0 +1,10 @@
+POST http://localhost:5000/api/workers
+Content-Type: application/json
+
+{
+    "name": "Nirmal Das",
+    "age": 27,
+    "homeState": "Assam",
+    "contactNumber": "9000111222",
+    "healthHistory": "No chronic illness"
+}
