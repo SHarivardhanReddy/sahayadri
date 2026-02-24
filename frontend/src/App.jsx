@@ -49,11 +49,38 @@ function Dashboard() {
 
   const handleAIAnalysis = async () => {
     try {
+      const history = userProfile.healthHistory || '';
+      const age = parseInt(userProfile.age) || 30;
+      const respiratory_issue = history.toLowerCase().includes('asthma') || history.toLowerCase().includes('respir') ? 1 : 0;
+
+      const computeHealthScore = (h) => {
+        if (!h) return 70;
+        const s = h.toLowerCase();
+        if (s.includes('fit') && !s.includes('mild')) return 90;
+        if (s.includes('mild')) return 70;
+        if (s.includes('recover')) return 65;
+        if (s.includes('skin')) return 75;
+        if (s.includes('diabet')) return 40;
+        if (s.includes('hyper') || s.includes('hypertension')) return 45;
+        return 60;
+      };
+
+      const health_score = computeHealthScore(history);
+
+      const computeBmi = () => {
+        if (userProfile.bmi) return parseFloat(userProfile.bmi);
+        if (age >= 55) return 31.0;
+        if (respiratory_issue === 1 || health_score <= 50) return 31.0;
+        return 24.5;
+      };
+
+      const bmi = computeBmi();
+
       const res = await axios.post('http://localhost:5000/api/evaluate-fitness', {
-        age: parseInt(userProfile.age),
-        bmi: 24.5,
-        respiratory_issue: userProfile.healthHistory?.toLowerCase().includes('asthma') ? 1 : 0,
-        health_score: 85
+        age,
+        bmi,
+        respiratory_issue,
+        health_score
       });
       setAiResult(res.data.fitnessStatus);
     } catch (err) {
