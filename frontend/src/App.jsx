@@ -7,6 +7,7 @@ import './App.css'
 import Home from './components/Home'
 import Login from './components/Login'
 import About from './components/About'
+import DoctorDashboard from './components/DoctorDashboard'
 
 function Dashboard() {
   const [userProfile, setUserProfile] = useState(null);
@@ -182,6 +183,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/doctor-dashboard" element={<DoctorDashboard />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

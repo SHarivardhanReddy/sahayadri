@@ -26,9 +26,11 @@ const Login = () => {
     try {
       const res = await axios.post('http://localhost:5000/api/verify-otp', { identifier, otp });
       if (res.data.success) {
-        // Critical: Store identity for the private dashboard
-        localStorage.setItem('userIdentifier', identifier);
-        navigate('/dashboard');
+          // Developer Note: Store identity and role for the private dashboard
+          const isDoctor = identifier.trim().toLowerCase().endsWith('@doctor.ac.in');
+          localStorage.setItem('userIdentifier', identifier);
+          localStorage.setItem('userRole', isDoctor ? 'doctor' : 'worker');
+          navigate(isDoctor ? '/doctor-dashboard' : '/dashboard');
       }
     } catch (err) {
       alert("Invalid Code. Please try again.");
