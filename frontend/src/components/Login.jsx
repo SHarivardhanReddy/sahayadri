@@ -40,8 +40,7 @@ const Login = () => {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <div className="login-brand">SAHAYADRI</div>
-        <h2>Staff Authentication</h2>
+        <h2>Authentication</h2>
         <p className="login-subtitle">Secure access for healthcare personnel</p>
 
         {step === 1 ? (
