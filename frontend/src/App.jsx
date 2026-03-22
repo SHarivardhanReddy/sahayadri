@@ -8,15 +8,22 @@ import Home from './components/Home'
 import Login from './components/Login'
 import DoctorDashboard from './components/DoctorDashboard'
 
+const JOB_TYPES = [
+  { id: 'general_labour', label: 'General Labour' },
+  { id: 'construction', label: 'Construction' },
+  { id: 'assembly', label: 'Assembly' },
+  { id: 'heavy_lifting', label: 'Heavy Lifting' },
+  { id: 'weight_lifting', label: 'Weight Lifting' }
+];
+
 function Dashboard() {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [aiResult, setAiResult] = useState(null);
+  const [selectedJobs, setSelectedJobs] = useState(['general_labour']);
+  const [aiResults, setAiResults] = useState(null);
   const [showResults, setShowResults] = useState(false);
-  const [chartData, setChartData] = useState(null);
   const navigate = useNavigate();
 
-  // Retrieve the identity used at login
   const identifier = localStorage.getItem('userIdentifier');
 
   const fetchMyProfile = async () => {
@@ -25,10 +32,8 @@ function Dashboard() {
       return;
     }
     try {
-      // Fetch only the matching record for privacy
       const res = await axios.get(`http://localhost:5000/api/workers/me/${identifier}`);
       setUserProfile(res.data);
-      // no edit allowed for workers — just load profile
     } catch (err) {
       console.error("Profile not found or access denied.");
     } finally {
@@ -38,78 +43,75 @@ function Dashboard() {
 
   useEffect(() => { fetchMyProfile() }, [identifier]);
 
+  const toggleJob = (jobId) => {
+    if (selectedJobs.includes(jobId)) {
+      if (selectedJobs.length > 1) setSelectedJobs(selectedJobs.filter(j => j !== jobId));
+    } else {
+      setSelectedJobs([...selectedJobs, jobId]);
+    }
+  }
+
   const handleAIAnalysis = async () => {
     try {
-      const history = userProfile.healthHistory || '';
-      const age = parseInt(userProfile.age) || 30;
-      const respiratory_issue = history.toLowerCase().includes('asthma') || history.toLowerCase().includes('respir') ? 1 : 0;
-
-      const computeHealthScore = (h) => {
-        if (!h) return 70;
-        const s = h.toLowerCase();
-        if (s.includes('fit') && !s.includes('mild')) return 90;
-        if (s.includes('mild')) return 70;
-        if (s.includes('recover')) return 65;
-        if (s.includes('skin')) return 75;
-        if (s.includes('diabet')) return 40;
-        if (s.includes('hyper') || s.includes('hypertension')) return 45;
-        return 60;
+      // Send the REAL database profile plus the requested jobs to the backend
+      const payload = {
+        ...userProfile,
+        work_types: selectedJobs
       };
 
-      const health_score = computeHealthScore(history);
-
-      const computeBmi = () => {
-        if (userProfile.bmi) return parseFloat(userProfile.bmi);
-        if (age >= 55) return 31.0;
-        if (respiratory_issue === 1 || health_score <= 50) return 31.0;
-        return 24.5;
-      };
-
-      const bmi = computeBmi();
-
-      const res = await axios.post('http://localhost:5000/api/evaluate-fitness', {
-        age,
-        bmi,
-        respiratory_issue,
-        health_score
-      });
-      setAiResult(res.data.fitnessStatus);
-
-      // Prepare contribution factors from the worker record for explanation
-      const contributions = [];
-
-      // Critical conditions
-      if (userProfile.heart_issue) contributions.push({ key: 'heart_issue', label: 'Heart issue', value: 3 });
-      if (userProfile.chest_pain) contributions.push({ key: 'chest_pain', label: 'Chest pain', value: 3 });
-      if (userProfile.kidney_issue) contributions.push({ key: 'kidney_issue', label: 'Kidney issue', value: 3 });
-
-      // Injuries
-      const injuryCount = ['knee_pain','leg_injury','hand_injury'].reduce((s,k)=> s + (userProfile[k] ? 1:0), 0);
-      if (injuryCount > 0) contributions.push({ key: 'injuries', label: `${injuryCount} injury(s)`, value: Math.min(3, injuryCount) });
-
-      // Respiratory / asthma
-      if (userProfile.asthma || respiratory_issue) contributions.push({ key: 'asthma', label: 'Respiratory issue', value: 2 });
-
-      // Age-related risk
-      if (age >= 60) contributions.push({ key: 'age', label: 'Age risk', value: 2 });
-
-      // Lifestyle
-      if (userProfile.smoking) contributions.push({ key: 'smoking', label: 'Smoking', value: 1 });
-      if (userProfile.alcohol) contributions.push({ key: 'alcohol', label: 'Alcohol use', value: 1 });
-
-      // If no significant flags, show health_score as positive contributor
-      if (contributions.length === 0) {
-        contributions.push({ key: 'healthy', label: 'No notable risk factors', value: 3 });
+      const res = await axios.post('http://localhost:5000/api/evaluate-fitness', payload);
+      
+      // The updated backend returns the consolidated Python result
+      // Format: { fitness_status: "Fit", contributions: [...] }
+      if (res.data.success && res.data.results) {
+        const resultData = res.data.results;
+        const confPercent = Math.round(parseFloat(resultData.confidence) * 100);
+        
+        const total = resultData.contributions.reduce((sum, c) => sum + c.value, 0) || 1;
+        
+        let normalized = [];
+        let runningSum = 0;
+        
+        resultData.contributions.forEach((c, i) => {
+            let slicePct = Math.round((c.value / total) * confPercent);
+            if (slicePct < 1) slicePct = 1;
+            
+            // Prevent rounding errors from exceeding confPercent
+            if (runningSum + slicePct > confPercent && i === resultData.contributions.length - 1) {
+                slicePct = confPercent - runningSum;
+            }
+            
+            runningSum += slicePct;
+            normalized.push({ ...c, pct: slicePct });
+        });
+        
+        // Fix any rounding gap to exactly match confPercent
+        if (runningSum < confPercent && normalized.length > 0) {
+            normalized[0].pct += (confPercent - runningSum);
+        }
+        
+        // Add the opposite slice for the remaining uncertainty
+        const remaining = 100 - confPercent;
+        if (remaining > 0) {
+            if (resultData.fitness_status === 'Unfit') {
+                normalized.push({ key: 'fit_chance', label: 'Cleared Medical Metrics', pct: remaining });
+            } else {
+                normalized.push({ key: 'unfit_risk', label: 'Inherent Occupational Risk', pct: remaining });
+            }
+        }
+        
+        setAiResults({
+            status: resultData.fitness_status,
+            confidence: resultData.confidence,
+            contributions: normalized
+        });
+        setShowResults(true);
+      } else {
+        alert("AI Server returned an unexpected format.");
       }
-
-      // Normalize contributions to percentages
-      const total = contributions.reduce((s,c)=> s + c.value, 0) || 1;
-      const contributionsPct = contributions.map(c => ({...c, pct: Math.round((c.value/total)*100)}));
-
-      setChartData({ contributions: contributionsPct, fitnessStatus: res.data.fitnessStatus, health_score: Math.round(health_score) });
-      setShowResults(true);
     } catch (err) {
-      alert("AI Analysis Failed.");
+      console.error(err);
+      alert("AI Analysis Failed. Ensure the AI and Node servers are running.");
     }
   };
 
@@ -117,6 +119,10 @@ function Dashboard() {
     localStorage.removeItem('userIdentifier');
     navigate('/login');
   }
+
+  // Active health flags
+  const healthBooleans = ['asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol'];
+  const activeFlags = userProfile ? healthBooleans.filter(b => userProfile[b]) : [];
 
   if (loading) return <div className="loading">Verifying credentials...</div>;
 
@@ -131,92 +137,158 @@ function Dashboard() {
         {userProfile ? (
           <>
             <section className="profile-section">
-              <div className={`profile-card-large flip-card ${showResults ? 'is-flipped' : ''}`}>
+              <div className={`profile-card-large flip-card ${showResults ? 'is-flipped' : ''}`} style={{minHeight: showResults ? 'auto' : 550}}>
                 <div className="flip-inner">
+                  
+                  {/* ---- FRONT ENTRY PAGE ---- */}
                   <div className="flip-front">
                     <div className="card-header-flex">
                       <h2>Health Credentials</h2>
-                      {aiResult && (
-                        <div className={`ai-badge ${aiResult}`}>
-                          AI STATUS: {aiResult.toUpperCase()}
-                        </div>
-                      )}
                     </div>
 
                     <div className="details-grid">
                       <div className="detail-item"><strong>Name:</strong> {userProfile.name}</div>
-                      <div className="detail-item"><strong>Aadhar ID:</strong> {userProfile.aadhar || 'Not Provided'}</div>
+                      <div className="detail-item"><strong>Age:</strong> {userProfile.age}</div>
                       <div className="detail-item"><strong>Home State:</strong> {userProfile.homeState}</div>
                       <div className="detail-item"><strong>Contact:</strong> {userProfile.mobile || userProfile.contactNumber}</div>
                     </div>
 
-                    <div className="health-history-box">
-                      <label>Medical History</label>
-                      <p>{userProfile.healthHistory || "No history recorded."}</p>
-                    </div>
-
-                    <div className="action-row">
-                      <button className="ai-scan-btn" onClick={handleAIAnalysis}>✨ Run AI Fitness Scan</button>
-                    </div>
-                  </div>
-
-                  <div className="flip-back">
-                    <div className="card-header-flex">
-                      <h2>AI Fitness Results</h2>
-                      {chartData && (
-                        <div className={`ai-badge ${chartData.fitnessStatus}`}>
-                          {chartData.fitnessStatus.toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                      <div className="chart-wrap">
-                        {chartData && (
-                          <div style={{display:'flex',gap:18,alignItems:'center'}}>
-                            <svg viewBox="0 0 200 200" width="220" height="220">
-                              <defs>
-                                <filter id="f1" x="-20%" y="-20%" width="140%" height="140%">
-                                  <feDropShadow dx="0" dy="6" stdDeviation="8" floodColor="#0b2230" floodOpacity="0.06"/>
-                                </filter>
-                              </defs>
-                              <g transform="translate(100,100)" filter="url(#f1)">
-                                {(() => {
-                                  const colors = ['#2563eb','#ffb020','#10b981','#ef4444','#8b5cf6','#f97316'];
-                                  let start = 0;
-                                  return chartData.contributions.map((c, i) => {
-                                    const value = c.pct;
-                                    const end = start + (value/100) * Math.PI*2;
-                                    const large = value > 50 ? 1 : 0;
-                                    const x1 = Math.cos(start) * 60;
-                                    const y1 = Math.sin(start) * 60;
-                                    const x2 = Math.cos(end) * 60;
-                                    const y2 = Math.sin(end) * 60;
-                                    const d = `M 0 0 L ${x1} ${y1} A 60 60 0 ${large} 1 ${x2} ${y2} Z`;
-                                    start = end;
-                                    return <path key={c.key} d={d} fill={colors[i % colors.length]} stroke="#fff" strokeWidth="1" />
-                                  })
-                                })()}
-                              </g>
-                            </svg>
-
-                            <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                              {chartData.contributions.map((c) => (
-                                <div key={c.key} style={{display:'flex',gap:10,alignItems:'center'}}>
-                                  <div style={{width:12,height:12,background:'#2563eb',borderRadius:3,flex:'0 0 12px'}}></div>
-                                  <div style={{fontSize:14,color:'#213444'}}>{c.label} — {c.pct}%</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                    <div className="health-history-box" style={{marginTop: 15}}>
+                      <label>Registered Medical Flags</label>
+                      <div style={{display:'flex', gap: 6, flexWrap:'wrap', marginTop: 8}}>
+                        {activeFlags.length > 0 ? (
+                           activeFlags.map(f => (
+                             <span key={f} style={{background: '#ffe4e6', color: '#b91c1c', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600}}>
+                               {f.replace('_', ' ').toUpperCase()}
+                             </span>
+                           ))
+                        ) : (
+                           <span style={{background: '#dcfce7', color: '#15803d', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600}}>
+                             NO MEDICAL FLAGS REGISTERED
+                           </span>
                         )}
                       </div>
-                      <div style={{marginTop:16}}>
-                        <div style={{color:'#274151', fontWeight:700}}>Result: {chartData ? chartData.fitnessStatus.toUpperCase() : 'N/A'}</div>
-                        <div style={{marginTop:8,color:'#3b4b52'}}>Explanation: {chartData && chartData.contributions.length ? chartData.contributions.map(c=>c.label).join(', ') : 'No notable risk factors.'}</div>
-                        <div style={{marginTop:12, display:'flex', justifyContent:'flex-end'}}>
-                          <button className="submit-btn" onClick={() => { setShowResults(false); setChartData(null); }}>Back</button>
-                        </div>
+                      {userProfile.healthHistory && <p style={{marginTop: 10, fontSize: 13}}>{userProfile.healthHistory}</p>}
+                    </div>
+
+                    {/* Multi-Select Job Types */}
+                    <div style={{marginTop: 25, background: '#f8fafc', padding: 15, borderRadius: 8, border: '1px solid #e2e8f0'}}>
+                      <h4 style={{margin: '0 0 10px 0', color: '#334155'}}>Select Jobs to Analyze</h4>
+                      <div style={{display: 'flex', gap: 10, flexWrap: 'wrap'}}>
+                        {JOB_TYPES.map(job => (
+                          <label key={job.id} style={{display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, cursor: 'pointer', background: selectedJobs.includes(job.id) ? '#dbeafe' : '#fff', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 20}}>
+                            <input 
+                              type="checkbox" 
+                              checked={selectedJobs.includes(job.id)} 
+                              onChange={() => toggleJob(job.id)} 
+                              style={{display: 'none'}}
+                            />
+                            {job.label}
+                          </label>
+                        ))}
                       </div>
+                    </div>
+
+                    <div className="action-row" style={{marginTop: 20}}>
+                      <button className="ai-scan-btn" onClick={handleAIAnalysis}>✨ Run Combined AI Fitness Scan</button>
+                    </div>
                   </div>
+
+                  {/* ---- BACK RESULTS PAGE ---- */}
+                  <div className="flip-back" style={{overflowY: 'auto'}}>
+                    <div className="card-header-flex">
+                      <h2>Explainable AI Results</h2>
+                    </div>
+                    
+                    <div style={{display: 'flex', flexDirection: 'column', gap: 30, marginTop: 15}}>
+                      {aiResults && (
+                           <div style={{background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0'}}>
+                              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15}}>
+                                 <h3 style={{margin: 0, color: '#1e293b'}}>Combined Scenario Analysis</h3>
+                                 <div className={`ai-badge ${aiResults.status}`}>
+                                   {aiResults.status.toUpperCase()} ({Math.round(aiResults.confidence * 100)}%)
+                                 </div>
+                              </div>
+                              
+                              <div className="chart-wrap" style={{background: '#fff', padding: 15, borderRadius: 8}}>
+                                <div style={{display:'flex', gap:20, alignItems:'center', flexWrap: 'wrap'}}>
+                                  <svg viewBox="0 0 200 200" width="160" height="160">
+                                    <defs>
+                                      <filter id="f1" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0b2230" floodOpacity="0.05"/>
+                                      </filter>
+                                    </defs>
+                                    <g transform="translate(100,100)" filter="url(#f1)">
+                                      {(() => {
+                                        let start = 0;
+                                        return aiResults.contributions.map((c, i) => {
+                                          const value = c.pct;
+                                          const end = start + (value/100) * Math.PI*2;
+                                          const large = value > 50 ? 1 : 0;
+                                          const x1 = Math.cos(start) * 70;
+                                          const y1 = Math.sin(start) * 70;
+                                          const x2 = Math.cos(end) * 70;
+                                          const y2 = Math.sin(end) * 70;
+                                          
+                                          // Safe = green, Unsafe (illnesses/demands) = red
+                                          const isSafe = aiResults.status === 'Fit' ? (c.key !== 'unfit_risk') : (c.key === 'fit_chance');
+                                          const sliceColor = isSafe ? '#10b981' : '#ef4444';
+                                          
+                                          const midAngle = start + ((value/100) * Math.PI)/2;
+                                          const textX = Math.cos(midAngle) * 45;
+                                          const textY = Math.sin(midAngle) * 45 + 5; // +5 to vertically center dominantBaseline fallback
+                                          
+                                          let sliceEl;
+                                          if (value >= 99) {
+                                            sliceEl = <circle key={c.key} cx="0" cy="0" r="70" fill={sliceColor} stroke="#fff" strokeWidth="2" />;
+                                          } else {
+                                            const d = `M 0 0 L ${x1} ${y1} A 70 70 0 ${large} 1 ${x2} ${y2} Z`;
+                                            sliceEl = <path key={c.key} d={d} fill={sliceColor} stroke="#fff" strokeWidth="2" />;
+                                          }
+                                          
+                                          start = end;
+                                          return (
+                                            <g key={c.key}>
+                                               {sliceEl}
+                                               {value > 4 && (
+                                                 <text x={textX} y={textY} fill="#fff" fontSize="14" fontWeight="bold" textAnchor="middle">
+                                                   {i + 1}
+                                                 </text>
+                                               )}
+                                            </g>
+                                          );
+                                        })
+                                      })()}
+                                    </g>
+                                  </svg>
+
+                                  <div style={{display:'flex', flexDirection:'column', gap:8, flex: 1}}>
+                                    <h4 style={{margin: '0 0 5px 0', fontSize: 13, color: '#64748b', textTransform:'uppercase'}}>Combined Feature Impact</h4>
+                                    {aiResults.contributions.map((c, idx) => {
+                                      const isSafe = aiResults.status === 'Fit' ? (c.key !== 'unfit_risk') : (c.key === 'fit_chance');
+                                      const sliceColor = isSafe ? '#10b981' : '#ef4444';
+                                      return (
+                                        <div key={c.key} style={{display:'flex', gap:10, alignItems:'center'}}>
+                                          <div style={{width:20, height:20, background: sliceColor, borderRadius:'4px', flex:'0 0 20px', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize: 12, fontWeight: 'bold'}}>
+                                            {idx + 1}
+                                          </div>
+                                          <div style={{fontSize:14, color:'#334155', fontWeight: 500}}>{c.label}</div>
+                                          <div style={{marginLeft: 'auto', fontSize:13, color:'#94a3b8', fontWeight: 'bold'}}>{c.pct}%</div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                           </div>
+                      )}
+                    </div>
+
+                    <div style={{marginTop:25, display:'flex', justifyContent:'center'}}>
+                      <button className="submit-btn" style={{padding: '12px 30px', fontSize: 16}} onClick={() => { setShowResults(false); setAiResults(null); }}>← Run Another Scan</button>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </section>
