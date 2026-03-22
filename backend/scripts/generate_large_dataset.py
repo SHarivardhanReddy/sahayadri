@@ -24,17 +24,20 @@ OUT_CSV = 'data/workers_health_10000.csv'
 
 with open(OUT_CSV, 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    header = ['name','age','work'] + binary_fields + ['can_work']
+    # Match ai_model/data/workers_health.csv column order (can_work before gender)
+    header = ['name', 'age', 'work'] + binary_fields + ['can_work', 'gender']
     writer.writerow(header)
 
     for i in range(NUM_ROWS):
         fname = random.choice(first_names)
         lname = random.choice(last_names)
         name = f"{fname} {lname}"
-        # Age distribution: majority 20-50, some older
+        # Age distribution: majority 20-50, some older; some minors 16-17 for policy-aligned labels
         age = int(random.gauss(36, 10))
-        if age < 18: age = random.randint(18,22)
-        if age > 70: age = random.randint(65,70)
+        if age > 70:
+            age = random.randint(65, 70)
+        elif age < 18:
+            age = random.randint(16, 17) if random.random() < 0.35 else random.randint(18, 22)
         work = random.choices(work_types, weights=[0.35,0.15,0.25,0.15,0.10])[0]
 
         # Probabilities influenced by age and work type
@@ -84,9 +87,14 @@ with open(OUT_CSV, 'w', newline='', encoding='utf-8') as f:
         if age >= 60 and (injury_count>=1 or flags['heart_issue']=='Yes' or flags['chest_pain']=='Yes'):
             serious_conditions = 1
 
-        can_work = 'No' if serious_conditions==1 else 'Yes'
+        if age < 18:
+            can_work = 'No'
+        else:
+            can_work = 'No' if serious_conditions == 1 else 'Yes'
 
+        gender = random.choice(['Male', 'Female'])
         row.append(can_work)
+        row.append(gender)
         writer.writerow(row)
 
 print(f"Generated {NUM_ROWS} rows to {OUT_CSV}")

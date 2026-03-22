@@ -5,11 +5,11 @@ import joblib
 # 1. Create a dataset representing health criteria for manual labor
 # age, bmi, respiratory_issue (1=Yes, 0=No), health_score (out of 100)
 data = {
-    'age': [22, 50, 30, 45, 28, 35, 60, 24],
-    'bmi': [22.5, 31.2, 24.0, 29.5, 21.0, 26.5, 33.0, 23.5],
-    'respiratory_issue': [0, 1, 0, 1, 0, 0, 1, 0],
-    'health_score': [90, 40, 85, 55, 95, 80, 30, 88],
-    'fit_label': [1, 0, 1, 0, 1, 1, 0, 1] # 1: Fit, 0: Unfit
+    'age': [22, 50, 30, 45, 28, 35, 60, 24, 16, 17],
+    'bmi': [22.5, 31.2, 24.0, 29.5, 21.0, 26.5, 33.0, 23.5, 22.0, 21.5],
+    'respiratory_issue': [0, 1, 0, 1, 0, 0, 1, 0, 0, 0],
+    'health_score': [90, 40, 85, 55, 95, 80, 30, 88, 95, 90],
+    'fit_label': [1, 0, 1, 0, 1, 1, 0, 1, 0, 0]  # 1: Fit, 0: Unfit; under-18 always 0
 }
 
 df = pd.DataFrame(data)

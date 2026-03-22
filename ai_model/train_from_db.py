@@ -81,6 +81,8 @@ def main():
         bmi = d.get('bmi') or infer_bmi_from_age_and_history(age, health)
         # derive label: fit if score >= 70 and respiratory==0 and bmi < 30
         fit_label = 1 if (score >= 70 and resp == 0 and bmi < 30) else 0
+        if age is not None and age < 18:
+            fit_label = 0
         records.append({'age': age or 30, 'bmi': float(bmi), 'respiratory_issue': int(resp), 'health_score': int(score), 'fit_label': int(fit_label)})
 
     df = pd.DataFrame(records)

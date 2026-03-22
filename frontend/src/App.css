@@ -201,10 +201,13 @@
 }
 
 .login-brand {
-  font-weight: 800;
-  color: var(--home-foreground);
-  letter-spacing: 2px;
-  margin-bottom: 8px;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+  margin-bottom: 6px;
 }
 
 .login-card h2 {
@@ -394,4 +397,588 @@ body { font-family: "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, "Helv
   .dashboard-header, .main-container { padding-left: 16px; padding-right: 16px; }
   .main-container { flex-direction: column-reverse; }
   .form-section { width:100%; }
+}
+
+/* ========== Sahyadri design system — home, worker & doctor portals ========== */
+
+.home-wrapper {
+  background:
+    radial-gradient(ellipse 120% 80% at 100% 0%, rgba(45, 212, 191, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 0% 100%, rgba(59, 130, 246, 0.1) 0%, transparent 45%),
+    linear-gradient(165deg, #030712 0%, #0f172a 48%, #020617 100%);
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+}
+
+.home-nav {
+  padding: 1.25rem clamp(1.25rem, 4vw, 3rem);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.home-nav .logo {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nav-login-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  box-shadow: 0 4px 20px rgba(13, 148, 136, 0.35);
+}
+
+.nav-login-btn:hover {
+  box-shadow: 0 8px 28px rgba(13, 148, 136, 0.45);
+}
+
+.hero-container {
+  align-items: center;
+  padding-top: clamp(2rem, 6vw, 4rem);
+  padding-bottom: clamp(3rem, 8vw, 5rem);
+  min-height: auto;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #2dd4bf;
+  margin-bottom: 1rem;
+}
+
+.hero-left h1 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  max-width: 14ch;
+}
+
+.hero-left p.lead {
+  font-size: 1.08rem;
+  max-width: 36ch;
+  color: #94a3b8;
+}
+
+.hero-actions .primary-btn {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  padding: 0.875rem 1.75rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.35);
+}
+
+.hero-actions .primary-btn:hover {
+  box-shadow: 0 12px 40px rgba(13, 148, 136, 0.5);
+}
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2.5rem;
+  max-width: 520px;
+}
+
+.home-feature-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.home-feature-card strong {
+  display: block;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.home-feature-card span {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.home-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+@media (max-width: 700px) {
+  .home-features {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+}
+
+/* Worker & doctor shared portal shell */
+.portal-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 100% 60% at 100% 0%, rgba(13, 148, 136, 0.06) 0%, transparent 55%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.portal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem clamp(1rem, 4vw, 2.5rem);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.portal-header__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.portal-header__title {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.portal-header__subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.portal-header--doctor {
+  border-bottom-color: rgba(13, 148, 136, 0.15);
+}
+
+.portal-header--doctor .portal-header__title {
+  color: #0f766e;
+}
+
+.portal-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 1.75rem) 3rem;
+}
+
+.portal-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.05),
+    0 20px 40px -12px rgba(15, 23, 42, 0.08);
+  padding: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+.portal-card__title {
+  margin: 0 0 0.35rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.flags-panel {
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+  border: 1px solid #e2e8f0;
+}
+
+.flags-panel__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.65rem;
+}
+
+.flag-chip {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.flag-chip--risk {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.flag-chip--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.job-picker {
+  margin-top: 1.35rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.job-picker h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.job-picker__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.job-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.job-chip:has(input:checked) {
+  background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
+  border-color: #5eead4;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.15);
+}
+
+.job-chip input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.portal-page .logout-btn {
+  border: 1.5px solid rgba(13, 148, 136, 0.25);
+  color: #0f766e;
+  background: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.portal-page .logout-btn:hover {
+  background: #f0fdfa;
+  border-color: #0d9488;
+}
+
+.portal-page .loading {
+  min-height: 60vh;
+  font-size: 1rem;
+  color: #475569;
+}
+
+/* Doctor portal */
+.doctor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.doctor-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.doctor-search:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+.doctor-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.doctor-filter select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  font-size: 0.85rem;
+}
+
+.doctor-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.doctor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.doctor-table thead {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.doctor-table th {
+  padding: 0.75rem 0.65rem;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.doctor-table td {
+  padding: 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  color: #334155;
+}
+
+.doctor-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.doctor-table input,
+.doctor-table select {
+  max-width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.btn-doctor-primary {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #fff;
+  border: none;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+}
+
+.btn-doctor-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-doctor-ghost {
+  background: #fff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.btn-doctor-ghost:hover {
+  background: #f8fafc;
+}
+
+.badge-fit {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge-flag-pill {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+.health-check-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.85rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.health-check-grid__title {
+  width: 100%;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.health-check-grid label {
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: calc(25% - 0.5rem);
+  min-width: 120px;
+}
+
+@media (max-width: 900px) {
+  .health-check-grid label {
+    width: calc(50% - 0.5rem);
+  }
+}
+
+.add-worker-panel {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.add-worker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 16px;
+  max-width: 480px;
+  width: 100%;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.modal-card h3 {
+  margin: 0 0 0.5rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.scan-job-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.scan-job-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.scan-job-label input {
+  accent-color: #0d9488;
+}
+
+.scan-job-label:has(input:checked) {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+.empty-state {
+  color: #64748b;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.edit-row-bg {
+  background: #fafafa;
+}
+
+.portal-page .error-container {
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  max-width: 420px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.portal-page .error-container button {
+  margin-top: 1rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  background: #0d9488;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
 }

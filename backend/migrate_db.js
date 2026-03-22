@@ -21,23 +21,6 @@ mongoose.connect(process.env.MONGO_URI)
                     requiresSave = true;
                 }
             }
-            
-            // Intelligently parse healthHistory
-            const hist = (worker.healthHistory || '').toLowerCase();
-            if (hist) {
-                if (hist.includes("asthma") || hist.includes("breath")) { worker.asthma = true; requiresSave = true; }
-                if (hist.includes("knee")) { worker.knee_pain = true; requiresSave = true; }
-                if (hist.includes("leg")) { worker.leg_injury = true; requiresSave = true; }
-                if (hist.includes("appendicitis")) { worker.appendicitis_history = true; requiresSave = true; }
-                if (hist.includes("hand")) { worker.hand_injury = true; requiresSave = true; }
-                if (hist.includes("headache") || hist.includes("migraine")) { worker.headache_issue = true; requiresSave = true; }
-                if (hist.includes("eye") || hist.includes("vision")) { worker.eyesight_issue = true; requiresSave = true; }
-                if (hist.includes("chest")) { worker.chest_pain = true; requiresSave = true; }
-                if (hist.includes("heart") || hist.includes("cardiac")) { worker.heart_issue = true; requiresSave = true; }
-                if (hist.includes("kidney") || hist.includes("renal")) { worker.kidney_issue = true; requiresSave = true; }
-                if (hist.includes("smok")) { worker.smoking = true; requiresSave = true; }
-                if (hist.includes("alcohol") || hist.includes("drink")) { worker.alcohol = true; requiresSave = true; }
-            }
 
             if (requiresSave) {
                 await worker.save();

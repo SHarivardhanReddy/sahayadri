@@ -4,11 +4,12 @@ const WorkerSchema = new mongoose.Schema({
     name: { type: String, required: true },
     gender: { type: String, enum: ['Male', 'Female', 'Other'], default: 'Male' },
     age: { type: Number, required: true },
+    /** Job type from CSV import (e.g. construction); optional for manually created records */
+    work: { type: String, required: false },
     homeState: { type: String, required: true },
     contactNumber: { type: String, required: true },
     email: { type: String, required: false },
     mobile: { type: String, required: false },
-    healthHistory: { type: String },
     aadhar: { type: String, default: "Not Provided" },
     // Stable health flags (booleans)
     asthma: { type: Boolean, default: false },

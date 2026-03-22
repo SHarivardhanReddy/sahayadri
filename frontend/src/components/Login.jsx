@@ -40,16 +40,22 @@ const Login = () => {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <h2>Authentication</h2>
-        <p className="login-subtitle">Secure access for healthcare personnel</p>
+        <div className="login-brand">Sahyadri</div>
+        <h2>Sign in</h2>
+        <p className="login-subtitle">Secure access for doctors and workers</p>
 
         {step === 1 ? (
           <form onSubmit={handleRequestOtp}>
             <div className="input-group">
-              <label>Email or Mobile Number</label>
+              <label>Sign in</label>
+              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 8 }}>
+                <strong>Doctors:</strong> your registered <code>@doctor.ac.in</code> email only (no mobile).
+                <br />
+                <strong>Workers:</strong> mobile number or registered email.
+              </p>
               <input 
                 type="text" 
-                placeholder="Enter registered email or mobile"
+                placeholder="doctor@doctor.ac.in or mobile number"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required

@@ -42,8 +42,19 @@ function parseCSV(content) {
       const age = parseInt(r.age) || 0;
       const work = (r.work || '').trim();
 
+      const rawGender = (r.gender || '').trim();
+      const gender =
+        rawGender.toLowerCase() === 'female'
+          ? 'Female'
+          : rawGender.toLowerCase() === 'male'
+            ? 'Male'
+            : rawGender.toLowerCase() === 'other'
+              ? 'Other'
+              : 'Male';
+
       const payload = {
         name,
+        gender,
         age,
         work,
         asthma: (r.asthma || '').toLowerCase() === 'yes',

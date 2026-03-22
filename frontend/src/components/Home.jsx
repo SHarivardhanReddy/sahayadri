@@ -7,34 +7,49 @@ const Home = () => {
 
   return (
     <div className="home-wrapper">
-      {/* Professional Navbar */}
       <nav className="home-nav">
         <div className="logo">SAHAYADRI</div>
         <div className="nav-links">
-          <button onClick={() => navigate('/login')} className="nav-login-btn">Login</button>
+          <button type="button" onClick={() => navigate('/login')} className="nav-login-btn">Sign in</button>
         </div>
       </nav>
-      
-      {/* Modern Hero Section */}
+
       <main className="hero-container">
         <div className="hero-left">
-          <h1>Digital AI Health Certifier for Workers</h1>
-          <p>
-            The industry-leading platform for real-time health tracking and AI-driven fitness certifications.
+          <span className="hero-eyebrow">Occupational health</span>
+          <h1>Digital fitness certification for labour</h1>
+          <p className="lead">
+            Real-time health parameters and AI-assisted fitness assessment—built for workers, clinics, and compliance teams.
           </p>
           <div className="hero-actions">
-            <button onClick={() => navigate('/login')} className="primary-btn">Open Dashboard</button>
+            <button type="button" onClick={() => navigate('/login')} className="primary-btn">Open dashboard</button>
           </div>
-          
-          
+
+          <div className="home-features">
+            <div className="home-feature-card">
+              <strong>Structured records</strong>
+              <span>Medical flags and demographics in one secure profile.</span>
+            </div>
+            <div className="home-feature-card">
+              <strong>Explainable AI</strong>
+              <span>Job-aware scans with clear contribution breakdowns.</span>
+            </div>
+            <div className="home-feature-card">
+              <strong>Dual access</strong>
+              <span>Workers view their file; doctors manage the roster.</span>
+            </div>
+          </div>
+
+          <footer className="home-footer">
+            Sahyadri · Labour fitness &amp; digital health records
+          </footer>
         </div>
 
         <div className="hero-right">
           <div className="img-card">
-            <img src={HeroImg} alt="AI health illustration" className="main-hero-img" />
+            <img src={HeroImg} alt="" className="main-hero-img" width={420} height={320} />
           </div>
         </div>
-      {/* compact hero — no extra feature block */}
       </main>
     </div>
   );

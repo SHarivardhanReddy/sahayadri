@@ -21,6 +21,22 @@ def predict():
         data = request.json
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
+
+        # Policy: age under 18 is 100% unfit (not eligible for labour fitness assessment)
+        if 'age' in data:
+            try:
+                if float(data['age']) < 18:
+                    return jsonify({
+                        "fitness_status": "Unfit",
+                        "confidence": "1.00",
+                        "contributions": [{
+                            "key": "age_policy",
+                            "label": "Age under 18: not eligible (policy)",
+                            "value": 1.0
+                        }]
+                    })
+            except (TypeError, ValueError):
+                pass
         
         if model is None:
             return jsonify({"error": "Model not ready"}), 500

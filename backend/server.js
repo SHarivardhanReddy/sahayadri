@@ -3,7 +3,8 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
-const Worker = require('./models/Worker'); 
+const Worker = require('./models/Worker');
+const Doctor = require('./models/Doctor');
 require('dotenv').config();
 
 const app = express();
@@ -20,27 +21,59 @@ mongoose.connect(process.env.MONGO_URI)
 // --- INTERNAL LOCAL OTP MECHANISM ---
 let localOtpStore = {}; 
 
-app.post('/api/request-otp', (req, res) => {
-    const { identifier } = req.body;
-    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    localOtpStore[identifier] = generatedOtp;
+app.post('/api/request-otp', async (req, res) => {
+    try {
+        const raw = (req.body.identifier || '').trim();
+        if (!raw) {
+            return res.status(400).json({ success: false, message: 'Email or mobile is required.' });
+        }
 
-    // SIMULATE DELIVERY: Check your terminal for this box!
-    console.log(`\n=========================================`);
-    console.log(`🔐 NEW OTP REQUEST FOR: ${identifier}`);
-    console.log(`👉 YOUR LOGIN CODE IS: [ ${generatedOtp} ]`);
-    console.log(`=========================================\n`);
+        const isDoctorEmail = /@doctor\.ac\.in$/i.test(raw);
+        if (isDoctorEmail) {
+            const doc = await Doctor.findOne({ email: raw.toLowerCase() });
+            if (!doc) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Unknown doctor email. Login with your registered @doctor.ac.in address only (no mobile).'
+                });
+            }
+        } else {
+            const digitsOnly = raw.replace(/\D/g, '');
+            const looksLikeMobile = digitsOnly.length >= 10;
+            const looksLikeEmail = raw.includes('@');
+            if (!looksLikeMobile && !looksLikeEmail) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Use a valid mobile number or email for worker login.'
+                });
+            }
+        }
 
-    res.json({ success: true, message: "Check your server terminal for the code!" });
+        const otpKey = isDoctorEmail ? raw.toLowerCase() : raw;
+        const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+        localOtpStore[otpKey] = generatedOtp;
+
+        console.log(`\n=========================================`);
+        console.log(`🔐 NEW OTP REQUEST FOR: ${otpKey}`);
+        console.log(`👉 YOUR LOGIN CODE IS: [ ${generatedOtp} ]`);
+        console.log(`=========================================\n`);
+
+        res.json({ success: true, message: 'Check your server terminal for the code!' });
+    } catch (err) {
+        console.error('request-otp', err);
+        res.status(500).json({ success: false, message: 'Server error.' });
+    }
 });
 
 app.post('/api/verify-otp', (req, res) => {
-    const { identifier, otp } = req.body;
-    if (localOtpStore[identifier] && localOtpStore[identifier] === otp) {
-        delete localOtpStore[identifier]; 
+    const id = (req.body.identifier || '').trim();
+    const { otp } = req.body;
+    const key = /@doctor\.ac\.in$/i.test(id) ? id.toLowerCase() : id;
+    if (localOtpStore[key] && localOtpStore[key] === otp) {
+        delete localOtpStore[key];
         res.json({ success: true });
     } else {
-        res.status(400).json({ success: false, message: "Invalid OTP" });
+        res.status(400).json({ success: false, message: 'Invalid OTP' });
     }
 });
 
@@ -91,7 +124,7 @@ app.put('/api/workers/:id', async (req, res) => {
         }
 
         const { id } = req.params;
-        const allowed = ['name', 'gender', 'age', 'homeState', 'contactNumber', 'mobile', 'email', 'healthHistory', 'aadhar', 'asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol', 'can_work'];
+        const allowed = ['name', 'gender', 'age', 'homeState', 'contactNumber', 'mobile', 'email', 'aadhar', 'asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol', 'can_work'];
         try {
             fs.appendFileSync('create_requests.log', `HEADERS=${JSON.stringify(req.headers)}\nBODY=${JSON.stringify(req.body)}\n---\n`);
         } catch (fsErr) {
@@ -120,7 +153,7 @@ app.post('/api/workers', async (req, res) => {
             return res.status(403).json({ message: 'Forbidden: doctor access only.' });
         }
 
-        const allowed = ['name', 'gender', 'age', 'homeState', 'contactNumber', 'mobile', 'email', 'healthHistory', 'aadhar', 'asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol', 'can_work'];
+        const allowed = ['name', 'gender', 'age', 'homeState', 'contactNumber', 'mobile', 'email', 'aadhar', 'asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol', 'can_work'];
         const payload = {};
         for (const k of allowed) {
             if (req.body[k] !== undefined) payload[k] = req.body[k];

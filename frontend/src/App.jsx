@@ -124,64 +124,62 @@ function Dashboard() {
   const healthBooleans = ['asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol'];
   const activeFlags = userProfile ? healthBooleans.filter(b => userProfile[b]) : [];
 
-  if (loading) return <div className="loading">Verifying credentials...</div>;
+  if (loading) return <div className="loading portal-page">Verifying credentials…</div>;
 
   return (
-    <div className="App">
-      <header className="dashboard-header">
-        <h1>Worker Portal</h1>
-        <button onClick={handleLogout} className="logout-btn">Secure Logout</button>
+    <div className="App portal-page">
+      <header className="portal-header portal-header--worker">
+        <div className="portal-header__brand">
+          <h1 className="portal-header__title">Worker portal</h1>
+          <span className="portal-header__subtitle">Your health record and AI fitness scan</span>
+        </div>
+        <button type="button" onClick={handleLogout} className="logout-btn">Log out</button>
       </header>
 
-      <div className="main-container">
+      <div className="portal-main">
         {userProfile ? (
           <>
             <section className="profile-section">
-              <div className={`profile-card-large flip-card ${showResults ? 'is-flipped' : ''}`} style={{minHeight: showResults ? 'auto' : 550}}>
+              <div className={`profile-card-large flip-card ${showResults ? 'is-flipped' : ''}`} style={{ minHeight: showResults ? 'auto' : 520 }}>
                 <div className="flip-inner">
                   
                   {/* ---- FRONT ENTRY PAGE ---- */}
                   <div className="flip-front">
                     <div className="card-header-flex">
-                      <h2>Health Credentials</h2>
+                      <h2>Health credentials</h2>
                     </div>
 
                     <div className="details-grid">
-                      <div className="detail-item"><strong>Name:</strong> {userProfile.name}</div>
-                      <div className="detail-item"><strong>Age:</strong> {userProfile.age}</div>
-                      <div className="detail-item"><strong>Home State:</strong> {userProfile.homeState}</div>
-                      <div className="detail-item"><strong>Contact:</strong> {userProfile.mobile || userProfile.contactNumber}</div>
+                      <div className="detail-item"><strong>Name</strong> {userProfile.name}</div>
+                      <div className="detail-item"><strong>Age</strong> {userProfile.age}</div>
+                      <div className="detail-item"><strong>Home state</strong> {userProfile.homeState}</div>
+                      <div className="detail-item"><strong>Contact</strong> {userProfile.mobile || userProfile.contactNumber}</div>
                     </div>
 
-                    <div className="health-history-box" style={{marginTop: 15}}>
-                      <label>Registered Medical Flags</label>
-                      <div style={{display:'flex', gap: 6, flexWrap:'wrap', marginTop: 8}}>
+                    <div className="flags-panel">
+                      <label className="flags-panel__label">Registered medical flags</label>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         {activeFlags.length > 0 ? (
                            activeFlags.map(f => (
-                             <span key={f} style={{background: '#ffe4e6', color: '#b91c1c', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600}}>
-                               {f.replace('_', ' ').toUpperCase()}
+                             <span key={f} className="flag-chip flag-chip--risk">
+                               {f.replace('_', ' ')}
                              </span>
                            ))
                         ) : (
-                           <span style={{background: '#dcfce7', color: '#15803d', padding: '4px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600}}>
-                             NO MEDICAL FLAGS REGISTERED
-                           </span>
+                           <span className="flag-chip flag-chip--ok">fit — no flags recorded</span>
                         )}
                       </div>
-                      {userProfile.healthHistory && <p style={{marginTop: 10, fontSize: 13}}>{userProfile.healthHistory}</p>}
                     </div>
 
-                    {/* Multi-Select Job Types */}
-                    <div style={{marginTop: 25, background: '#f8fafc', padding: 15, borderRadius: 8, border: '1px solid #e2e8f0'}}>
-                      <h4 style={{margin: '0 0 10px 0', color: '#334155'}}>Select Jobs to Analyze</h4>
-                      <div style={{display: 'flex', gap: 10, flexWrap: 'wrap'}}>
+                    <div className="job-picker">
+                      <h4>Select jobs to analyze</h4>
+                      <div className="job-picker__grid">
                         {JOB_TYPES.map(job => (
-                          <label key={job.id} style={{display: 'flex', alignItems: 'center', gap: 5, fontSize: 14, cursor: 'pointer', background: selectedJobs.includes(job.id) ? '#dbeafe' : '#fff', padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 20}}>
+                          <label key={job.id} className="job-chip">
                             <input 
                               type="checkbox" 
                               checked={selectedJobs.includes(job.id)} 
                               onChange={() => toggleJob(job.id)} 
-                              style={{display: 'none'}}
                             />
                             {job.label}
                           </label>
@@ -189,8 +187,8 @@ function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="action-row" style={{marginTop: 20}}>
-                      <button className="ai-scan-btn" onClick={handleAIAnalysis}>✨ Run Combined AI Fitness Scan</button>
+                    <div className="action-row" style={{ marginTop: 20 }}>
+                      <button type="button" className="ai-scan-btn" onClick={handleAIAnalysis}>Run AI fitness scan</button>
                     </div>
                   </div>
 
@@ -295,9 +293,9 @@ function Dashboard() {
           </>
         ) : (
           <div className="error-container">
-            <h2>Access Restricted</h2>
-            <p>No health record found matching <strong>{identifier}</strong>.</p>
-            <button onClick={() => navigate('/login')}>Return to Login</button>
+            <h2>Access restricted</h2>
+            <p>No health record found for <strong>{identifier}</strong>.</p>
+            <button type="button" onClick={() => navigate('/login')}>Return to login</button>
           </div>
         )}
       </div>

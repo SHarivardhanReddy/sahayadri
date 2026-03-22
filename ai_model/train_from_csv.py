@@ -1,14 +1,31 @@
+"""
+Train RandomForest on data/workers_health.csv.
+
+**Inputs (X):**
+  - ``age`` (numeric)
+  - Medical flags (binary): asthma, knee_pain, leg_injury, appendicitis_history,
+    hand_injury, headache_issue, eyesight_issue, chest_pain, heart_issue,
+    kidney_issue, smoking, alcohol
+  - ``work`` one-hot encoded (e.g. work_construction, …)
+  - ``gender`` one-hot encoded (e.g. gender_male, gender_female)
+
+**Target (y):** ``can_work`` → ``can_work_bin`` (Yes=1, No=0). Rows with age < 18
+are forced to 0 (not eligible) before training.
+
+Run from the ``ai_model`` directory. For large files (~2M rows), ensure enough RAM;
+optional: append under-18 examples with ``append_under18_rows_to_csv.py`` first.
+"""
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import joblib
 
-df = pd.read_csv('data/workers_health.csv')
+df = pd.read_csv("data/workers_health.csv", low_memory=False)
 
 
 # Inspect
-print('Loaded records:', len(df))
+print("Loaded records:", len(df))
 
 # Columns to use as binary features (Yes/No -> 1/0)
 binary_cols = ['asthma','knee_pain','leg_injury','appendicitis_history','hand_injury',
@@ -26,6 +43,8 @@ gender_dummies = pd.get_dummies(df['gender'].astype(str).str.strip().str.lower()
 X = pd.concat([df[['age'] + binary_cols], work_dummies, gender_dummies], axis=1)
 # Target: can_work (Yes/No)
 df['can_work_bin'] = df['can_work'].str.strip().str.lower().map({'yes':1,'no':0}).fillna(0).astype(int)
+# Policy: age under 18 is always unfit (labour eligibility)
+df.loc[df['age'] < 18, 'can_work_bin'] = 0
 y = df['can_work_bin']
 
 # Train/test split
