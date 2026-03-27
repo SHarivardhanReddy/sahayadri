@@ -20,7 +20,7 @@ const Login = () => {
     try {
       const res = await axios.post('http://localhost:5000/api/request-otp', { identifier });
       if (res.data.success) {
-        setSuccess("✓ Code sent! Check your VS Code Terminal for the 4-digit verification code.");
+        setSuccess("✓ Code sent! Check your email for the 4-digit verification code.");
         setTimeout(() => {
           setSuccess('');
           setStep(2);
@@ -80,7 +80,7 @@ const Login = () => {
         <div className="login-brand">Sahyadri</div>
         <h2>{step === 1 ? 'Sign in' : 'Verify Code'}</h2>
         <p className="login-subtitle">
-          {step === 1 ? 'Secure access for doctors and workers' : 'Enter the 4-digit code from your terminal'}
+          {step === 1 ? 'Secure access for doctors and workers' : 'Enter the 4-digit code sent to your email'}
         </p>
 
         {/* Error Message */}

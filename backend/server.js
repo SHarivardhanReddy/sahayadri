@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
 require('dotenv').config();
@@ -18,8 +19,59 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch(err => console.log("❌ DB Error:", err));
 
-// --- INTERNAL LOCAL OTP MECHANISM ---
-let localOtpStore = {}; 
+// --- EMAIL CONFIGURATION ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    },
+    logger: true,
+    debug: true
+});
+
+// Verify email configuration
+transporter.verify((error, success) => {
+    if (error) {
+        console.log('❌ Email configuration error:', error.message);
+        console.log('Error details:', error);
+    } else {
+        console.log('✅ Email service ready - credentials verified');
+    }
+});
+
+// --- OTP STORAGE WITH EXPIRATION ---
+let otpStore = {};
+
+const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+const sendOtpEmail = async (email, otp) => {
+    try {
+        console.log(`📧 Attempting to send OTP to ${email}...`);
+        const info = await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Your OTP for Sahayadri Health System Login',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Sahayadri Health System</h2>
+                    <p>Your One-Time Password (OTP) for login is:</p>
+                    <div style="background-color: #f0f0f0; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                        <h1 style="color: #007bff; letter-spacing: 5px; margin: 0;">${otp}</h1>
+                    </div>
+                    <p style="color: #666;">This OTP will expire in 10 minutes.</p>
+                    <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+                </div>
+            `
+        });
+        console.log(`✅ OTP sent successfully to ${email} - Message ID: ${info.messageId}`);
+        return true;
+    } catch (error) {
+        console.error('❌ Email send error:', error.message);
+        console.error('Full error:', error);
+        return false;
+    }
+}; 
 
 app.post('/api/request-otp', async (req, res) => {
     try {
@@ -29,6 +81,8 @@ app.post('/api/request-otp', async (req, res) => {
         }
 
         const isDoctorEmail = /@doctor\.ac\.in$/i.test(raw);
+        let emailToSend = null;
+
         if (isDoctorEmail) {
             const doc = await Doctor.findOne({ email: raw.toLowerCase() });
             if (!doc) {
@@ -37,11 +91,25 @@ app.post('/api/request-otp', async (req, res) => {
                     message: 'Unknown doctor email. Login with your registered @doctor.ac.in address only (no mobile).'
                 });
             }
+            emailToSend = raw.toLowerCase();
         } else {
             const digitsOnly = raw.replace(/\D/g, '');
             const looksLikeMobile = digitsOnly.length >= 10;
             const looksLikeEmail = raw.includes('@');
-            if (!looksLikeMobile && !looksLikeEmail) {
+            
+            if (!looksLikeEmail && looksLikeMobile) {
+                // Mobile number - find worker's email
+                const worker = await Worker.findOne({ mobile: raw });
+                if (!worker || !worker.email) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Worker not found or email not registered.'
+                    });
+                }
+                emailToSend = worker.email;
+            } else if (looksLikeEmail) {
+                emailToSend = raw;
+            } else {
                 return res.status(400).json({
                     success: false,
                     message: 'Use a valid mobile number or email for worker login.'
@@ -50,15 +118,25 @@ app.post('/api/request-otp', async (req, res) => {
         }
 
         const otpKey = isDoctorEmail ? raw.toLowerCase() : raw;
-        const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-        localOtpStore[otpKey] = generatedOtp;
+        const otp = generateOtp();
+        
+        // Store OTP with 10-minute expiration
+        otpStore[otpKey] = {
+            code: otp,
+            expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+        };
 
-        console.log(`\n=========================================`);
-        console.log(`🔐 NEW OTP REQUEST FOR: ${otpKey}`);
-        console.log(`👉 YOUR LOGIN CODE IS: [ ${generatedOtp} ]`);
-        console.log(`=========================================\n`);
+        const emailSent = await sendOtpEmail(emailToSend, otp);
 
-        res.json({ success: true, message: 'Check your server terminal for the code!' });
+        if (!emailSent) {
+            delete otpStore[otpKey];
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send OTP. Please try again.'
+            });
+        }
+
+        res.json({ success: true, message: 'OTP sent to your email.' });
     } catch (err) {
         console.error('request-otp', err);
         res.status(500).json({ success: false, message: 'Server error.' });
@@ -69,8 +147,18 @@ app.post('/api/verify-otp', (req, res) => {
     const id = (req.body.identifier || '').trim();
     const { otp } = req.body;
     const key = /@doctor\.ac\.in$/i.test(id) ? id.toLowerCase() : id;
-    if (localOtpStore[key] && localOtpStore[key] === otp) {
-        delete localOtpStore[key];
+    
+    if (!otpStore[key]) {
+        return res.status(400).json({ success: false, message: 'OTP not found. Request a new one.' });
+    }
+
+    if (Date.now() > otpStore[key].expiresAt) {
+        delete otpStore[key];
+        return res.status(400).json({ success: false, message: 'OTP has expired. Request a new one.' });
+    }
+
+    if (otpStore[key].code === otp) {
+        delete otpStore[key];
         res.json({ success: true });
     } else {
         res.status(400).json({ success: false, message: 'Invalid OTP' });
