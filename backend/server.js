@@ -80,7 +80,7 @@ app.post('/api/request-otp', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email or mobile is required.' });
         }
 
-        const isDoctorEmail = /@doctor\.ac\.in$/i.test(raw);
+        const isDoctorEmail = /@mlrit\.ac\.in$/i.test(raw);
         let emailToSend = null;
 
         if (isDoctorEmail) {
@@ -88,7 +88,7 @@ app.post('/api/request-otp', async (req, res) => {
             if (!doc) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Unknown doctor email. Login with your registered @doctor.ac.in address only (no mobile).'
+                    message: 'Unknown doctor email. Login with your registered @mlrit.ac.in address only (no mobile).'
                 });
             }
             emailToSend = raw.toLowerCase();
@@ -146,7 +146,7 @@ app.post('/api/request-otp', async (req, res) => {
 app.post('/api/verify-otp', (req, res) => {
     const id = (req.body.identifier || '').trim();
     const { otp } = req.body;
-    const key = /@doctor\.ac\.in$/i.test(id) ? id.toLowerCase() : id;
+    const key = /@mlrit\.ac\.in$/i.test(id) ? id.toLowerCase() : id;
     
     if (!otpStore[key]) {
         return res.status(400).json({ success: false, message: 'OTP not found. Request a new one.' });
@@ -185,8 +185,8 @@ app.get('/api/workers', async (req, res) => {
     try {
         const role = req.header('x-user-role') || '';
         const identifier = (req.header('x-user-identifier') || '').toLowerCase();
-        // simple validation: role must be 'doctor' and identifier must end with @doctor.ac.in
-        if (role !== 'doctor' || !identifier.endsWith('@doctor.ac.in')) {
+        // simple validation: role must be 'doctor' and identifier must end with @mlrit.ac.in
+        if (role !== 'doctor' || !identifier.endsWith('@mlrit.ac.in')) {
             return res.status(403).json({ message: 'Forbidden: doctor access only.' });
         }
 
@@ -207,7 +207,7 @@ app.put('/api/workers/:id', async (req, res) => {
     try {
         const role = req.header('x-user-role') || '';
         const identifier = (req.header('x-user-identifier') || '').toLowerCase();
-        if (role !== 'doctor' || !identifier.endsWith('@doctor.ac.in')) {
+        if (role !== 'doctor' || !identifier.endsWith('@mlrit.ac.in')) {
             return res.status(403).json({ message: 'Forbidden: doctor access only.' });
         }
 
@@ -237,7 +237,7 @@ app.post('/api/workers', async (req, res) => {
     try {
         const role = req.header('x-user-role') || '';
         const identifier = (req.header('x-user-identifier') || '').toLowerCase();
-        if (role !== 'doctor' || !identifier.endsWith('@doctor.ac.in')) {
+        if (role !== 'doctor' || !identifier.endsWith('@mlrit.ac.in')) {
             return res.status(403).json({ message: 'Forbidden: doctor access only.' });
         }
 

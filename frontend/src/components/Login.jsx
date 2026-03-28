@@ -43,7 +43,7 @@ const Login = () => {
       const res = await axios.post('http://localhost:5000/api/verify-otp', { identifier, otp });
       if (res.data.success) {
         setSuccess('✓ Verification successful! Redirecting...');
-        const isDoctor = identifier.trim().toLowerCase().endsWith('@doctor.ac.in');
+        const isDoctor = identifier.trim().toLowerCase().endsWith('@mlrit.ac.in');
         localStorage.setItem('userIdentifier', identifier);
         localStorage.setItem('userRole', isDoctor ? 'doctor' : 'worker');
         setTimeout(() => {
@@ -107,12 +107,12 @@ const Login = () => {
                 Email or Phone Number
               </label>
               <div className="input-help">
-                <strong>Doctors:</strong> Use your <code>@doctor.ac.in</code> email only<br />
+                <strong>Doctors:</strong> Use your <code>@mlrit.ac.in</code> email only<br />
                 <strong>Workers:</strong> Mobile number or registered email
               </div>
               <input
                 type="text"
-                placeholder="doctor@doctor.ac.in or 9876543210"
+                placeholder="doctor@mlrit.ac.in or 9876543210"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required
