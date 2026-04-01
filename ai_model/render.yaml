@@ -1,18 +1,13 @@
 services:
   - type: web
     name: ai-fitness-server
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT ai_server:app
+    runtime: docker
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.3
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG
         value: "false"
     plan: free
-    dockerfile: false
     branch: main
     routes:
       - path: /
