@@ -4,19 +4,89 @@ import joblib
 import pandas as pd
 import json
 import traceback
+import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-try:
-    model = joblib.load('fitness_model.joblib')
-    print(f"✅ Model loaded: {model.n_features_in_} features expected")
-except Exception as e:
-    print(f"❌ Model load failed: {e}")
-    model = None
+# --- MODEL INITIALIZATION ---
+model = None
+features_dict = None
+model_ready = False
+
+def load_model():
+    global model, features_dict, model_ready
+    try:
+        model_path = 'fitness_model.joblib'
+        features_path = 'model_features.json'
+        
+        if not os.path.exists(model_path):
+            print(f"❌ Model file not found: {model_path}")
+            return False
+            
+        if not os.path.exists(features_path):
+            print(f"❌ Features file not found: {features_path}")
+            return False
+        
+        model = joblib.load(model_path)
+        with open(features_path, 'r') as f:
+            features_dict = json.load(f)
+            
+        print(f"✅ Model loaded: {model.n_features_in_} features expected")
+        print(f"✅ Features config loaded: {len(features_dict.get('feature_columns', []))} columns")
+        model_ready = True
+        return True
+    except Exception as e:
+        print(f"❌ Model load failed: {e}")
+        model_ready = False
+        return False
+
+# Load model on startup
+load_model()
+
+# --- HEALTH CHECK ENDPOINTS ---
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "model_ready": model_ready,
+        "timestamp": str(pd.Timestamp.now())
+    }), 200
+
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    """API health check endpoint"""
+    return jsonify({
+        "status": "healthy",
+        "model_ready": model_ready,
+        "service": "AI Fitness Prediction Service",
+        "version": "1.0.0"
+    }), 200
+
+@app.route('/api/status', methods=['GET'])
+def status():
+    """Model status endpoint"""
+    if not model_ready:
+        return jsonify({
+            "status": "error",
+            "message": "Model not loaded"
+        }), 503
+    
+    return jsonify({
+        "status": "ready",
+        "model_features": model.n_features_in_,
+        "available_endpoints": [
+            "/api/health",
+            "/api/status", 
+            "/api/predict"
+        ]
+    }), 200
 
 @app.route('/predict', methods=['POST'])
+@app.route('/api/predict', methods=['POST'])
 def predict():
+    """Fitness prediction endpoint - accepts health data and returns fitness assessment"""
     try:
         data = request.json
         if not data:
@@ -38,12 +108,10 @@ def predict():
             except (TypeError, ValueError):
                 pass
         
-        if model is None:
-            return jsonify({"error": "Model not ready"}), 500
+        if not model_ready or model is None:
+            return jsonify({"error": "Model not ready. Please check server status."}), 503
             
-        with open('model_features.json', 'r') as f:
-            features_dict = json.load(f)
-        feature_cols = features_dict['feature_columns']
+        feature_cols = features_dict.get('feature_columns', [])
 
         work_types = data.get('work_types', ['general_labour'])
         if not isinstance(work_types, list):
@@ -112,6 +180,51 @@ def predict():
         print(f"Server error: {traceback.format_exc()}")
         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
 
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors"""
+    return jsonify({
+        "error": "Endpoint not found",
+        "available_endpoints": [
+            "/health",
+            "/api/health",
+            "/api/status",
+            "/api/predict",
+            "/predict"
+        ]
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    return jsonify({
+        "error": "Internal server error",
+        "message": str(error)
+    }), 500
+
 if __name__ == '__main__':
-    print("🚀 Consolidated Explainable AI Fitness Server running on http://localhost:5001...")
-    app.run(port=5001, debug=True)
+    print("=" * 60)
+    print("🚀 AI Fitness Prediction Server")
+    print("=" * 60)
+    print(f"📊 Model Status: {'✅ Ready' if model_ready else '❌ Not Ready'}")
+    print(f"🌐 Running on: http://localhost:5001")
+    print(f"🔗 Flask CORS enabled for cross-origin requests")
+    print("\n📍 Available Endpoints:")
+    print("   - GET  /health                 (Basic health check)")
+    print("   - GET  /api/health             (API health check)")
+    print("   - GET  /api/status             (Model status)")
+    print("   - POST /api/predict            (Fitness prediction)")
+    print("   - POST /predict                (Legacy endpoint - use /api/predict)")
+    print("\n💡 Example prediction request:")
+    print('   curl -X POST http://localhost:5001/api/predict \\')
+    print('     -H "Content-Type: application/json" \\')
+    print('     -d \'{"age": 30, "gender": "Male", "work_types": ["general_labour"]}\'')
+    print("=" * 60 + "\n")
+    
+    # Run with production-ready settings
+    app.run(
+        host='127.0.0.1',
+        port=5001,
+        debug=os.getenv('FLASK_ENV') == 'development',
+        use_reloader=False
+    )
