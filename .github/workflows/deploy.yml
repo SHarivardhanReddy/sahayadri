@@ -1,0 +1,150 @@
+name: Build & Push AI Model to GitHub Container Registry
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ai_model/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'ai_model/**' 
+      - 'Dockerfile'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/ai-fitness-server
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create deployment
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'production',
+              description: 'AI Fitness Server Docker Image',
+              auto_merge: false,
+              required_contexts: [],
+              payload: {
+                image_url: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest',
+                commit_sha: context.sha
+              }
+            });
+            
+            console.log(`Created deployment: ${deployment.data.id}`);
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ai_model/requirements.txt
+
+      - name: Check model files exist
+        run: |
+          test -f ai_model/fitness_model.joblib || (echo "ERROR: Model file missing!" && exit 1)
+          test -f ai_model/model_features.json || (echo "ERROR: Features file missing!" && exit 1)
+          echo "✓ Model files verified"
+
+      - name: Test Flask app imports
+        run: |
+          python -c "import ai_model.ai_server; print('✓ Flask app imports successfully')"
+
+      - name: Test model loading
+        run: |
+          python -c "
+          import joblib
+          model = joblib.load('ai_model/fitness_model.joblib')
+          print(f'✓ Model loaded: {model.n_features_in_} features expected')
+          "
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: github.event_name == 'push' && success()
+
+    steps:
+      - name: Deployment successful
+        run: |
+          echo "✅ AI Fitness Model deployed successfully!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "To run container:"
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          echo "docker run -p 5001:5001 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Docker image built successfully!\n\nImage: `${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest`'
+            })
