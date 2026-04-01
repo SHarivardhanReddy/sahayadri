@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "services": [
+    {
+      "type": "web",
+      "name": "ai-fitness-server",
+      "runtime": "docker",
+      "environmentSlug": "docker",
+      "plan": "free",
+      "region": "oregon",
+      "autoDeploy": true,
+      "dockerfilePath": "./Dockerfile",
+      "envVars": [
+        {
+          "key": "FLASK_ENV",
+          "value": "production"
+        },
+        {
+          "key": "FLASK_DEBUG",
+          "value": "false"
+        },
+        {
+          "key": "PYTHONUNBUFFERED",
+          "value": "1"
+        }
+      ],
+      "startCommand": null,
+      "buildCommand": null,
+      "preDeployCommand": null,
+      "healthCheckPath": "/health",
+      "buildFilter": {
+        "paths": [
+          "./ai_model/**",
+          "./Dockerfile",
+          "./.dockerignore"
+        ]
+      }
+    }
+  ]
+}
