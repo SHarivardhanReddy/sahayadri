@@ -172,10 +172,10 @@ PORT=<assigned dynamically by Render>
 
 | Document | Purpose |
 |----------|---------|
-| [DEPLOYMENT_CHECKLIST.md](ai_model/DEPLOYMENT_CHECKLIST.md) | Complete step-by-step guide |
-| [RENDER_DEPLOYMENT.md](ai_model/RENDER_DEPLOYMENT.md) | Advanced deployment topics |
-| [README.md](ai_model/README.md) | API reference |
-| [MCP_SERVER.md](ai_model/MCP_SERVER.md) | MCP integration guide |
+| [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | Complete step-by-step guide |
+| [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Advanced deployment topics |
+| [README.md](README.md) | API reference |
+| [MCP_SERVER.md](MCP_SERVER.md) | MCP integration guide |
 
 ---
 
