@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "fitness-assessment": {
+      "command": "python",
+      "args": [
+        "mcp_server.py"
+      ],
+      "cwd": "${workspaceFolder}/ai_model",
+      "env": {
+        "AI_SERVER_URL": "http://127.0.0.1:5001"
+      }
+    }
+  }
+}

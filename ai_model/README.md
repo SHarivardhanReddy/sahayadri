@@ -1,6 +1,6 @@
 # AI Fitness Assessment Server
 
-A Flask-based REST API server for fitness assessment predictions using a pre-trained machine learning model.
+A Flask-based REST API server for fitness assessment predictions using a pre-trained machine learning model. Also includes an MCP (Model Context Protocol) server for integration with Claude and other AI applications.
 
 ## 📋 Prerequisites
 
@@ -182,6 +182,41 @@ OSError: [Errno 48] Address already in use
 ModuleNotFoundError: No module named 'flask'
 ```
 **Solution:** Run `pip install -r requirements.txt`
+
+## 🤖 MCP Server Integration
+
+The AI Fitness Assessment model can also be used via MCP (Model Context Protocol) for seamless integration with Claude and other AI applications.
+
+### Quick Start
+
+**Terminal 1 - Start Flask AI Server:**
+```bash
+python ai_server.py
+```
+
+**Terminal 2 - Start MCP Server:**
+```bash
+# Windows
+start_mcp_server.bat
+
+# Linux/Mac
+chmod +x start_mcp_server.sh
+./start_mcp_server.sh
+```
+
+### Use with Claude
+
+Once both servers are running, Claude can:
+- Call the `assess_fitness` tool to evaluate workers
+- Check model status with `get_model_status`
+- Provide recommendations based on fitness assessments
+
+**Example Claude Prompt:**
+```
+"Assess if a 40-year-old worker with knee pain can safely work in construction"
+```
+
+For full MCP documentation, see [MCP_SERVER.md](MCP_SERVER.md)
 
 ## 🔧 Environment Variables
 
