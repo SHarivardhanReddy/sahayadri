@@ -1,0 +1,48 @@
+project:
+  name: sahayadri
+  title: Sahayadri - Labour Fitness Assessment
+  description: AI-powered worker fitness assessment system for labour-intensive roles
+  version: 1.0.0
+  author: SHarivardhanReddy
+  repository: https://github.com/SHarivardhanReddy/sahayadri
+  license: Proprietary
+
+docker:
+  image_name: ai-fitness-server
+  registry: ghcr.io
+  owner: SHarivardhanReddy
+  repository_name: sahayadri
+  full_image: ghcr.io/SHarivardhanReddy/sahayadri/ai-fitness-server
+
+ai_model:
+  port: 5001
+  flask_env: production
+  framework: Flask 3.0.0
+  model_type: Random Forest Classifier
+  model_file: fitness_model.joblib
+  features_file: model_features.json
+  min_python_version: "3.12"
+
+backend:
+  port: 3000
+  framework: Express.js
+  runtime: Node.js 18+
+
+frontend:
+  port: 5173
+  framework: React 18+ with Vite
+  build_tool: Vite
+
+ci_cd:
+  provider: GitHub Actions
+  registry: GitHub Container Registry
+  auto_deploy: true
+  deploy_branch: main
+
+features:
+  - Flask REST API for fitness assessment
+  - MCP (Model Context Protocol) integration for Claude
+  - Docker containerization
+  - Automated CI/CD with GitHub Actions
+  - React frontend with Vite
+  - Express.js backend API
