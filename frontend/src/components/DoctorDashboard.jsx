@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
+import apiClient from '../api/axiosConfig'
 
 const healthBooleans = ['asthma', 'knee_pain', 'leg_injury', 'appendicitis_history', 'hand_injury', 'headache_issue', 'eyesight_issue', 'chest_pain', 'heart_issue', 'kidney_issue', 'smoking', 'alcohol']
 
@@ -62,7 +62,7 @@ const DoctorDashboard = () => {
       try {
         const role = localStorage.getItem('userRole')
         const identifier = localStorage.getItem('userIdentifier')
-        const res = await axios.get('http://localhost:5000/api/workers', {
+        const res = await apiClient.get('/api/workers', {
           headers: {
             'x-user-role': role || '',
             'x-user-identifier': identifier || ''
@@ -117,7 +117,7 @@ const DoctorDashboard = () => {
     try {
       const role = localStorage.getItem('userRole')
       const identifier = localStorage.getItem('userIdentifier')
-      const res = await axios.put(`http://localhost:5000/api/workers/${editingId}`, formData, {
+      const res = await apiClient.put(`/api/workers/${editingId}`, formData, {
         headers: { 'x-user-role': role || '', 'x-user-identifier': identifier || '' }
       })
       setWorkers(ws => ws.map(w => w._id === res.data._id ? res.data : w))
@@ -138,7 +138,7 @@ const DoctorDashboard = () => {
     try {
       const role = localStorage.getItem('userRole')
       const identifier = localStorage.getItem('userIdentifier')
-      const res = await axios.post('http://localhost:5000/api/workers', addForm, { headers: { 'x-user-role': role || '', 'x-user-identifier': identifier || '' } })
+      const res = await apiClient.post('/api/workers', addForm, { headers: { 'x-user-role': role || '', 'x-user-identifier': identifier || '' } })
       setWorkers(ws => [res.data, ...ws])
       setAdding(false)
       setAddForm(emptyAddForm())
@@ -176,7 +176,7 @@ const DoctorDashboard = () => {
     setScanResult(null)
     try {
       const payload = buildFitnessPayload(scanWorker, scanJobs)
-      const res = await axios.post('http://localhost:5000/api/evaluate-fitness', payload)
+      const res = await apiClient.post('/api/evaluate-fitness', payload)
       if (res.data.success && res.data.results) {
         setScanResult(res.data.results)
       } else {

@@ -3,13 +3,16 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 const nodemailer = require('nodemailer');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
-require('dotenv').config();
+
+// Load environment variables from .env file
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -293,8 +296,31 @@ app.post('/api/evaluate-fitness', async (req, res) => {
         const response = await axios.post('http://127.0.0.1:5001/predict', req.body);
         res.json({ success: true, results: response.data });
     } catch (error) {
-        res.status(500).json({ success: false, message: "AI Analysis failed" });
+        res.status(500).json({ success: false, message: "AI Analysis failed", error: error.message });
     }
 });
 
-app.listen(PORT, () => console.log(`🚀 Privacy-Enabled Server running on port ${PORT}`));    
+// Health check endpoint for debugging
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'Backend server is running',
+        port: PORT,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`🚀 Privacy-Enabled Server running on port ${PORT}`);
+    console.log(`✅ Server is accessible at http://localhost:${PORT}`);
+    console.log(`✅ CORS enabled for all origins`);
+    console.log(`📍 Available endpoints:`);
+    console.log(`   - GET  /api/health (health check)`);
+    console.log(`   - POST /api/request-otp`);
+    console.log(`   - POST /api/verify-otp`);
+    console.log(`   - GET  /api/workers/me/:identifier`);
+    console.log(`   - GET  /api/workers`);
+    console.log(`   - POST /api/workers`);
+    console.log(`   - PUT  /api/workers/:id`);
+    console.log(`   - POST /api/evaluate-fitness`);
+});    

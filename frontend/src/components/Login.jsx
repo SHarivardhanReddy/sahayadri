@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import apiClient from '../api/axiosConfig';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
+  const [userRole, setUserRole] = useState('worker'); // 'doctor' or 'worker'
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,8 +18,42 @@ const Login = () => {
     setSuccess('');
     setLoading(true);
 
+    // Validate doctor login
+    if (userRole === 'doctor') {
+      const email = identifier.trim().toLowerCase();
+      if (!email.endsWith('@mlrit.ac.in')) {
+        setError('⚠ Doctors must login with @mlrit.ac.in email address only');
+        setLoading(false);
+        return;
+      }
+      if (!email.includes('@')) {
+        setError('⚠ Please enter a valid @mlrit.ac.in email address for doctor login');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Validate worker login
+    if (userRole === 'worker') {
+      const trimmedId = identifier.trim();
+      const isEmail = trimmedId.includes('@');
+      const isMobile = /^\d{10,}$/.test(trimmedId.replace(/\D/g, ''));
+      
+      if (isEmail && trimmedId.toLowerCase().endsWith('@mlrit.ac.in')) {
+        setError('⚠ Workers cannot use @mlrit.ac.in email. Please use your personal email or mobile number');
+        setLoading(false);
+        return;
+      }
+      
+      if (!isEmail && !isMobile) {
+        setError('⚠ Enter a valid email or 10-digit mobile number for worker login');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const res = await axios.post('http://localhost:5000/api/request-otp', { identifier });
+      const res = await apiClient.post('/api/request-otp', { identifier });
       if (res.data.success) {
         setSuccess("✓ Code sent! Check your email for the 4-digit verification code.");
         setTimeout(() => {
@@ -27,7 +62,14 @@ const Login = () => {
         }, 1500);
       }
     } catch (err) {
-      setError('⚠ Error: Ensure backend server is running on http://localhost:5000');
+      console.error('OTP Request Error:', err);
+      if (err.code === 'ECONNABORTED') {
+        setError('⚠ Request timeout. Backend server may be slow.');
+      } else if (!err.response) {
+        setError('⚠ Cannot connect to backend server. Ensure it\'s running on http://localhost:5000');
+      } else {
+        setError(err.response.data?.message || '⚠ Error from server. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -40,17 +82,17 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/verify-otp', { identifier, otp });
+      const res = await apiClient.post('/api/verify-otp', { identifier, otp });
       if (res.data.success) {
         setSuccess('✓ Verification successful! Redirecting...');
-        const isDoctor = identifier.trim().toLowerCase().endsWith('@mlrit.ac.in');
         localStorage.setItem('userIdentifier', identifier);
-        localStorage.setItem('userRole', isDoctor ? 'doctor' : 'worker');
+        localStorage.setItem('userRole', userRole);
         setTimeout(() => {
-          navigate(isDoctor ? '/doctor-dashboard' : '/dashboard');
+          navigate(userRole === 'doctor' ? '/doctor-dashboard' : '/dashboard');
         }, 1000);
       }
     } catch (err) {
+      console.error('OTP Verify Error:', err);
       setError('✕ Invalid code. Please check and try again.');
     } finally {
       setLoading(false);
@@ -101,18 +143,50 @@ const Login = () => {
 
         {step === 1 ? (
           <form onSubmit={handleRequestOtp} className="login-form">
+            {/* Role Selection */}
+            <div className="role-selector">
+              <label className="role-label">Login As:</label>
+              <div className="role-buttons">
+                <button
+                  type="button"
+                  className={`role-btn ${userRole === 'doctor' ? 'active' : ''}`}
+                  onClick={() => {
+                    setUserRole('doctor');
+                    setIdentifier('');
+                    setError('');
+                  }}
+                >
+                  👨‍⚕️ Doctor
+                </button>
+                <button
+                  type="button"
+                  className={`role-btn ${userRole === 'worker' ? 'active' : ''}`}
+                  onClick={() => {
+                    setUserRole('worker');
+                    setIdentifier('');
+                    setError('');
+                  }}
+                >
+                  👷 Worker
+                </button>
+              </div>
+            </div>
+
             <div className="input-group">
               <label>
                 <span className="input-icon">📧</span>
-                Email or Phone Number
+                {userRole === 'doctor' ? '@mlrit.ac.in Email' : 'Email or Phone Number'}
               </label>
               <div className="input-help">
-                <strong>Doctors:</strong> Use your <code>@mlrit.ac.in</code> email only<br />
-                <strong>Workers:</strong> Mobile number or registered email
+                {userRole === 'doctor' ? (
+                  <>Only <code>@mlrit.ac.in</code> email addresses are allowed for doctors</>
+                ) : (
+                  <>Enter your registered mobile number or personal email</>
+                )}
               </div>
               <input
                 type="text"
-                placeholder="doctor@mlrit.ac.in or 9876543210"
+                placeholder={userRole === 'doctor' ? 'doctor@mlrit.ac.in' : '9876543210 or email@example.com'}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 required

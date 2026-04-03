@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import apiClient from './api/axiosConfig'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import './App.css'
 
@@ -32,7 +32,7 @@ function Dashboard() {
       return;
     }
     try {
-      const res = await axios.get(`http://localhost:5000/api/workers/me/${identifier}`);
+      const res = await apiClient.get(`/api/workers/me/${identifier}`);
       setUserProfile(res.data);
     } catch (err) {
       console.error("Profile not found or access denied.");
@@ -59,7 +59,7 @@ function Dashboard() {
         work_types: selectedJobs
       };
 
-      const res = await axios.post('http://localhost:5000/api/evaluate-fitness', payload);
+      const res = await apiClient.post('/api/evaluate-fitness', payload);
       
       // The updated backend returns the consolidated Python result
       // Format: { fitness_status: "Fit", contributions: [...] }
