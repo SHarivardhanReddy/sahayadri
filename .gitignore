@@ -14,18 +14,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Logs
-*.log
-logs/
-
 # Build outputs
 dist/
 build/
-
-# Dependencies
-node_modules/
-venv/
-__pycache__/
 
 # IDE settings
 .vscode/*
