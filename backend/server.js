@@ -5,6 +5,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { PythonShell } = require('python-shell');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
 
@@ -293,10 +294,52 @@ app.post('/api/workers', async (req, res) => {
 
 app.post('/api/evaluate-fitness', async (req, res) => {
     try {
-        const response = await axios.post('http://127.0.0.1:5001/predict', req.body);
-        res.json({ success: true, results: response.data });
+        const pythonExe = process.env.PYTHON_EXECUTABLE || 'python';
+        const modelUrl = process.env.MODEL_URL;
+        const featuresUrl = process.env.FEATURES_URL;
+        
+        // Set environment variables for Python script
+        const options = {
+            pythonPath: pythonExe,
+            args: [JSON.stringify(req.body)],
+            env: {
+                ...process.env,
+                MODEL_URL: modelUrl,
+                FEATURES_URL: featuresUrl
+            }
+        };
+        
+        // Call Python prediction script
+        PythonShell.run('predict_model.py', options, (err, results) => {
+            if (err) {
+                console.error('❌ Python Execution Error:', err);
+                return res.status(500).json({
+                    success: false,
+                    message: 'AI Analysis failed',
+                    error: err.message
+                });
+            }
+            
+            try {
+                // Parse the JSON result from Python script
+                const prediction = JSON.parse(results[0]);
+                res.json({ success: true, results: prediction });
+            } catch (parseErr) {
+                console.error('❌ JSON Parse Error:', parseErr);
+                res.status(500).json({
+                    success: false,
+                    message: 'Failed to parse AI response',
+                    error: parseErr.message
+                });
+            }
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: "AI Analysis failed", error: error.message });
+        console.error('❌ Fitness Evaluation Error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'AI Analysis failed',
+            error: error.message
+        });
     }
 });
 

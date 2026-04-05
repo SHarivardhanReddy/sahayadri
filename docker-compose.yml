@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongo:
+    image: mongo:7.0-alpine
+    container_name: sahayadri_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: sahayadri
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/sahayadri --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sahayadri_network
+    restart: unless-stopped
+
+  # AI Model Service (Flask)
+  ai_model:
+    build:
+      context: ./ai_model
+      dockerfile: Dockerfile
+    container_name: sahayadri_ai_model
+    ports:
+      - "5001:5001"
+    environment:
+      FLASK_ENV: production
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5001
+      HF_MODEL_REPO: ZORO1112/random_forest
+      HF_MODEL_FILENAME: ai_model/fitness_model.joblib
+      HF_CACHE_DIR: /app/hf_cache
+    volumes:
+      - ./ai_model/fitness_model.joblib:/app/fitness_model.joblib:ro
+      - ./ai_model/model_features.json:/app/model_features.json:ro
+      - ai_cache:/app/hf_cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sahayadri_network
+    restart: unless-stopped
+
+  # Backend API (Node.js)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sahayadri_backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/sahayadri
+      EMAIL_USER: ${EMAIL_USER:-reddyharivardhan49@gmail.com}
+      EMAIL_PASS: ${EMAIL_PASS:-uorv wlzp cqox pukt}
+      AI_SERVER_URL: http://ai_model:5001
+      PORT: 5000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ai_model:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - sahayadri_network
+    restart: unless-stopped
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sahayadri_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api}
+    depends_on:
+      - backend
+    networks:
+      - sahayadri_network
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    driver: local
+  ai_cache:
+    driver: local
+
+networks:
+  sahayadri_network:
+    driver: bridge
+
+# Instructions:
+# 1. Configure environment variables:
+#    Set EMAIL_USER, EMAIL_PASS, CORS_ORIGIN, VITE_API_URL if different from defaults
+#
+# 2. Build and start all services:
+#    docker-compose up -d
+#
+# 3. Check service status:
+#    docker-compose ps
+#
+# 4. View logs:
+#    docker-compose logs -f
+#
+# 5. Stop all services:
+#    docker-compose down
+#
+# 6. Access services:
+#    Frontend:   http://localhost:5173
+#    Backend:    http://localhost:5000
+#    AI Model:   http://localhost:5001
+#    MongoDB:    localhost:27017
