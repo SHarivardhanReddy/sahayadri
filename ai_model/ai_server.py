@@ -5,9 +5,23 @@ import pandas as pd
 import json
 import traceback
 import os
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Configuration from environment variables
+app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+app.config['DEBUG'] = app.config['ENV'] == 'development'
+app.config['JSON_SORT_KEYS'] = False
 
 # --- MODEL INITIALIZATION ---
 model = None
@@ -24,23 +38,23 @@ def load_model():
         features_path = os.path.join(SCRIPT_DIR, 'model_features.json')
         
         if not os.path.exists(model_path):
-            print(f"❌ Model file not found: {model_path}")
+            logger.error(f"Model file not found: {model_path}")
             return False
             
         if not os.path.exists(features_path):
-            print(f"❌ Features file not found: {features_path}")
+            logger.error(f"Features file not found: {features_path}")
             return False
         
         model = joblib.load(model_path)
         with open(features_path, 'r') as f:
             features_dict = json.load(f)
             
-        print(f"✅ Model loaded: {model.n_features_in_} features expected")
-        print(f"✅ Features config loaded: {len(features_dict.get('feature_columns', []))} columns")
+        logger.info(f"Model loaded successfully: {model.n_features_in_} features expected")
+        logger.info(f"Features config loaded: {len(features_dict.get('feature_columns', []))} columns")
         model_ready = True
         return True
     except Exception as e:
-        print(f"❌ Model load failed: {e}")
+        logger.error(f"Model load failed: {str(e)}", exc_info=True)
         model_ready = False
         return False
 
@@ -180,12 +194,13 @@ def predict():
         })
     
     except Exception as e:
-        print(f"Server error: {traceback.format_exc()}")
+        logger.error(f"Prediction failed: {str(e)}", exc_info=True)
         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
 
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
+    logger.warning(f"404 error - endpoint not found")
     return jsonify({
         "error": "Endpoint not found",
         "available_endpoints": [
@@ -200,34 +215,43 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
+    logger.error(f"500 error: {str(error)}", exc_info=True)
     return jsonify({
         "error": "Internal server error",
         "message": str(error)
     }), 500
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("🚀 AI Fitness Prediction Server")
-    print("=" * 60)
-    print(f"📊 Model Status: {'✅ Ready' if model_ready else '❌ Not Ready'}")
-    print(f"🌐 Running on: http://localhost:5001")
-    print(f"🔗 Flask CORS enabled for cross-origin requests")
-    print("\n📍 Available Endpoints:")
-    print("   - GET  /health                 (Basic health check)")
-    print("   - GET  /api/health             (API health check)")
-    print("   - GET  /api/status             (Model status)")
-    print("   - POST /api/predict            (Fitness prediction)")
-    print("   - POST /predict                (Legacy endpoint - use /api/predict)")
-    print("\n💡 Example prediction request:")
-    print('   curl -X POST http://localhost:5001/api/predict \\')
-    print('     -H "Content-Type: application/json" \\')
-    print('     -d \'{"age": 30, "gender": "Male", "work_types": ["general_labour"]}\'')
-    print("=" * 60 + "\n")
+    # Configuration from environment variables
+    flask_env = os.getenv('FLASK_ENV', 'production')
+    host = os.getenv('FLASK_HOST', '0.0.0.0')
+    port = int(os.getenv('FLASK_PORT', 5001))
+    debug_mode = flask_env == 'development'
+    
+    logger.info("=" * 60)
+    logger.info("🚀 AI Fitness Prediction Server")
+    logger.info("=" * 60)
+    logger.info(f"📊 Model Status: {'✅ Ready' if model_ready else '❌ Not Ready'}")
+    logger.info(f"🌐 Running on: http://{host}:{port}")
+    logger.info(f"🔗 Flask CORS enabled for cross-origin requests")
+    logger.info(f"🔐 Environment: {flask_env}")
+    logger.info("\n📍 Available Endpoints:")
+    logger.info("   - GET  /health                 (Basic health check)")
+    logger.info("   - GET  /api/health             (API health check)")
+    logger.info("   - GET  /api/status             (Model status)")
+    logger.info("   - POST /api/predict            (Fitness prediction)")
+    logger.info("   - POST /predict                (Legacy endpoint - use /api/predict)")
+    logger.info("\n💡 Example prediction request:")
+    logger.info("   curl -X POST http://localhost:5001/api/predict")
+    logger.info("     -H 'Content-Type: application/json'")
+    logger.info("     -d '{\"age\": 30, \"gender\": \"Male\", \"work_types\": [\"general_labour\"]}'")
+    logger.info("=" * 60 + "\n")
     
     # Run with production-ready settings
     app.run(
-        host='127.0.0.1',
-        port=5001,
-        debug=os.getenv('FLASK_ENV') == 'development',
-        use_reloader=False
+        host=host,
+        port=port,
+        debug=debug_mode,
+        use_reloader=False,
+        threaded=True
     )
