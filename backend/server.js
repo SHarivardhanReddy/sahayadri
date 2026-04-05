@@ -42,27 +42,28 @@ const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 const sendOtpEmail = async (email, otp) => {
     try {
         console.log(`📧 Attempting to send OTP to ${email}...`);
-        const response = await resend.emails.send({
+        const { data, error } = await resend.emails.send({
             from: 'onboarding@resend.dev',
             to: email,
-            subject: 'Your OTP for Sahayadri Health System Login',
+            subject: 'Your Sahayadri Health Record OTP',
             html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">Sahayadri Health System</h2>
-                    <p>Your One-Time Password (OTP) for login is:</p>
-                    <div style="background-color: #f0f0f0; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                        <h1 style="color: #007bff; letter-spacing: 5px; margin: 0;">${otp}</h1>
-                    </div>
-                    <p style="color: #666;">This OTP will expire in 10 minutes.</p>
-                    <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h2>Security Verification</h2>
+                    <p>Your one-time password (OTP) is: <strong style="font-size: 1.5em; color: #007bff;">${otp}</strong></p>
+                    <p>This code will expire in 10 minutes.</p>
                 </div>
             `
         });
-        console.log(`✅ OTP sent successfully to ${email}`);
+
+        if (error) {
+            console.error('❌ Resend Error:', error);
+            return false;
+        }
+
+        console.log('✅ Email sent successfully:', data.id);
         return true;
-    } catch (error) {
-        console.error('❌ Email send error:', error.message);
-        console.error('Full error:', error);
+    } catch (err) {
+        console.error('❌ System Error:', err);
         return false;
     }
 }; 
