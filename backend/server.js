@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { PythonShell } = require('python-shell');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
@@ -23,26 +23,16 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch(err => console.log("❌ DB Error:", err));
 
-// --- EMAIL CONFIGURATION ---
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    logger: true,
-    debug: true
-});
+// --- EMAIL CONFIGURATION (Resend) ---
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify email configuration
-transporter.verify((error, success) => {
-    if (error) {
-        console.log('❌ Email configuration error:', error.message);
-        console.log('Error details:', error);
-    } else {
-        console.log('✅ Email service ready - credentials verified');
-    }
-});
+// Verify email configuration on startup
+if (!process.env.RESEND_API_KEY) {
+    console.log('⚠️  RESEND_API_KEY not set in environment variables');
+    console.log('Email service will not work. Add RESEND_API_KEY to .env file');
+} else {
+    console.log('✅ Email service ready - Resend API configured');
+}
 
 // --- OTP STORAGE WITH EXPIRATION ---
 let otpStore = {};
@@ -52,8 +42,8 @@ const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 const sendOtpEmail = async (email, otp) => {
     try {
         console.log(`📧 Attempting to send OTP to ${email}...`);
-        const info = await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        const response = await resend.emails.send({
+            from: 'onboarding@resend.dev',
             to: email,
             subject: 'Your OTP for Sahayadri Health System Login',
             html: `
@@ -68,7 +58,7 @@ const sendOtpEmail = async (email, otp) => {
                 </div>
             `
         });
-        console.log(`✅ OTP sent successfully to ${email} - Message ID: ${info.messageId}`);
+        console.log(`✅ OTP sent successfully to ${email}`);
         return true;
     } catch (error) {
         console.error('❌ Email send error:', error.message);

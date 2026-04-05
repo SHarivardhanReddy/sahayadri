@@ -26,7 +26,7 @@ Node.js/Express REST API for the Digital Health Record Labour Fitness Assessment
 - **Node.js** 14+ and **npm** 6+
 - **Python** 3.8+ (for AI model predictions)
 - **MongoDB** (local or Atlas)
-- **Gmail account** with App Password (for OTP emails)
+- **Resend Account** (for email service)
 
 ### Installation
 
@@ -395,28 +395,34 @@ Submit health data and get fitness assessment.
 
 ## 📧 Email Setup
 
-### Gmail Configuration
+### Resend Configuration
 
-1. **Two-Factor Authentication Required:**
-   - Account → Security → 2-Step Verification
+1. **Sign up at Resend:** https://resend.com
+2. **Get API Key:**
+   - Navigate to https://resend.com/api-keys
+   - Click "Create API Key"
+   - Copy the generated key
 
-2. **App Password Generation:**
-   - Account → App passwords
-   - Select Mail/Windows Computer
-   - Copy 16-character password
-
-3. **Test Email Service:**
-```bash
-# Server will verify email on startup
-# Check console for: ✅ Email service ready
+3. **Add to `.env`:**
+```env
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
 ```
 
-### Email Templates
+### How Emails Work
 
-#### OTP Email
-- Contains 4-digit OTP
-- Includes expiration time
-- Professional formatting
+- Resend handles all email delivery (no Gmail setup needed)
+- Emails are sent from `onboarding@resend.dev` by default
+- Later you can configure custom domains in Resend dashboard
+- All OTP emails go through Resend API
+
+### Testing Email Service
+
+The backend will log when Resend is configured:
+```
+✅ Email service ready - Resend API configured
+```
+
+If you see a warning about missing `RESEND_API_KEY`, add it to your `.env` file.
 
 ## 🤖 AI Model Integration
 How It Works
