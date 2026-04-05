@@ -1,3 +1,13 @@
+---
+title: Digital Health Record - Labour Fitness Assessment
+emoji: 🏥
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+app_file: backend/server.js
+pinned: false
+---
+
 # Digital Health Record - Labour Fitness Assessment
 
 A full-stack application for assessing worker fitness for labour-intensive roles using machine learning.

@@ -1,3 +1,15 @@
+---
+title: AI Fitness Prediction Model
+emoji: 🤖
+colorFrom: purple
+colorTo: blue
+sdk: docker
+sdk_version: "latest"
+python_version: "3.11"
+app_file: ai_server.py
+pinned: false
+---
+
 # AI Fitness Prediction Model - Deployment Guide
 
 This directory contains the trained ML model and Flask API server for the Digital Health Record Labour Fitness Assessment system.
