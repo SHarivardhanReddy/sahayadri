@@ -2,6 +2,9 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG VITE_API_URL=http://localhost:5000
+
 # Copy package files
 COPY package*.json ./
 
@@ -11,7 +14,8 @@ RUN npm ci
 # Copy source files
 COPY . .
 
-# Build the application
+# Build the application with API URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Production stage
@@ -31,6 +35,9 @@ RUN npm ci --only=production
 
 # Expose port
 EXPOSE 5173
+
+# Default environment (can be overridden at runtime)
+ENV VITE_API_URL=http://localhost:5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
