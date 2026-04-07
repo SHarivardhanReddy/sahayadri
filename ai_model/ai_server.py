@@ -225,7 +225,7 @@ if __name__ == '__main__':
     # Configuration from environment variables
     flask_env = os.getenv('FLASK_ENV', 'production')
     host = os.getenv('FLASK_HOST', '0.0.0.0')
-    port = int(os.getenv('FLASK_PORT', 5001))
+    port = int(os.getenv('FLASK_PORT', 7860))
     debug_mode = flask_env == 'development'
     
     logger.info("=" * 60)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     logger.info("   - POST /api/predict            (Fitness prediction)")
     logger.info("   - POST /predict                (Legacy endpoint - use /api/predict)")
     logger.info("\n💡 Example prediction request:")
-    logger.info("   curl -X POST http://localhost:5001/api/predict")
+    logger.info("   curl -X POST http://localhost:7860/api/predict")
     logger.info("     -H 'Content-Type: application/json'")
     logger.info("     -d '{\"age\": 30, \"gender\": \"Male\", \"work_types\": [\"general_labour\"]}'")
     logger.info("=" * 60 + "\n")
