@@ -5,7 +5,6 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
-const { PythonShell } = require('python-shell');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
 
@@ -321,51 +320,25 @@ app.post('/api/workers', async (req, res) => {
 
 app.post('/api/evaluate-fitness', async (req, res) => {
     try {
-        const pythonExe = process.env.PYTHON_EXECUTABLE || 'python';
-        const modelUrl = process.env.MODEL_URL;
-        const featuresUrl = process.env.FEATURES_URL;
+        const aiServerUrl = process.env.AI_SERVER_URL || 'http://localhost:5001';
         
-        // Set environment variables for Python script
-        const options = {
-            pythonPath: pythonExe,
-            args: [JSON.stringify(req.body)],
-            env: {
-                ...process.env,
-                MODEL_URL: modelUrl,
-                FEATURES_URL: featuresUrl
-            }
-        };
+        // Call AI server via HTTP
+        console.log(`🤖 Calling AI server: ${aiServerUrl}/api/predict`);
         
-        // Call Python prediction script
-        PythonShell.run('predict_model.py', options, (err, results) => {
-            if (err) {
-                console.error('❌ Python Execution Error:', err);
-                return res.status(500).json({
-                    success: false,
-                    message: 'AI Analysis failed',
-                    error: err.message
-                });
-            }
-            
-            try {
-                // Parse the JSON result from Python script
-                const prediction = JSON.parse(results[0]);
-                res.json({ success: true, results: prediction });
-            } catch (parseErr) {
-                console.error('❌ JSON Parse Error:', parseErr);
-                res.status(500).json({
-                    success: false,
-                    message: 'Failed to parse AI response',
-                    error: parseErr.message
-                });
-            }
+        const response = await axios.post(`${aiServerUrl}/api/predict`, req.body, {
+            timeout: 30000 // 30 second timeout
         });
+        
+        console.log('✅ AI prediction received');
+        res.json({ success: true, results: response.data });
     } catch (error) {
-        console.error('❌ Fitness Evaluation Error:', error.message);
+        console.error('❌ AI Server Error:', error.message);
+        console.error('Make sure AI server is running at:', process.env.AI_SERVER_URL || 'http://localhost:5001');
         res.status(500).json({
             success: false,
-            message: 'AI Analysis failed',
-            error: error.message
+            message: 'AI Analysis failed - AI server unavailable',
+            error: error.message,
+            aiServerUrl: process.env.AI_SERVER_URL || 'http://localhost:5001'
         });
     }
 });

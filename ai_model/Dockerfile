@@ -7,13 +7,14 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy production requirements file
+COPY requirements-prod.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies (production only)
+RUN pip install --no-cache-dir -r requirements-prod.txt
 
 # Copy application files
 COPY ai_server.py .
@@ -29,9 +30,9 @@ ENV FLASK_ENV=production
 ENV FLASK_HOST=0.0.0.0
 ENV FLASK_PORT=5001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5001/health')" || exit 1
+# Health check using curl (more reliable than Python one-liner)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5001/health || exit 1
 
 # Run with Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "wsgi:app"]

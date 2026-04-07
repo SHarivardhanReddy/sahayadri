@@ -1,0 +1,21 @@
+# Production dependencies for AI Model Server
+# Lightweight version without development tools
+
+# Core Flask dependencies
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# ML and data processing
+joblib==1.3.2
+pandas==2.1.3
+scikit-learn==1.3.2
+numpy==1.24.3
+
+# Production server
+gunicorn==21.2.0
+
+# HTTP client
+requests==2.31.0
+
+# Environment variable management
+python-dotenv==1.0.0

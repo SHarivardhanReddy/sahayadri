@@ -26,7 +26,6 @@
     "express": "^5.2.1",
     "googleapis": "^118.0.0",
     "mongoose": "^9.3.3",
-    "python-shell": "^1.0.8",
     "react-router-dom": "^7.13.0",
     "twilio": "^5.12.1"
   },
