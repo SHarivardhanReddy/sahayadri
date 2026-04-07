@@ -26,6 +26,7 @@ mongoose.connect(process.env.MONGO_URI)
 // --- EMAIL CONFIGURATION (Nodemailer with OAuth2) ---
 const transporter = nodemailer.createTransport({
     service: 'gmail',
+    pool: true, // Use pooling to keep the connection open
     auth: {
         type: 'OAuth2',
         user: process.env.GMAIL_USER,
@@ -33,6 +34,8 @@ const transporter = nodemailer.createTransport({
         clientSecret: process.env.CLIENT_SECRET,
         refreshToken: process.env.REFRESH_TOKEN,
     },
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000, // 10 seconds
 });
 
 // Verify email configuration on startup
