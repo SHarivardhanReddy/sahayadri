@@ -34,27 +34,19 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 def load_model():
     global model, features_dict, model_ready
     try:
+        # Use simple filenames since they are in the root directory
         model_path = 'fitness_model.joblib'
         features_path = 'model_features.json'
-        
-        if not os.path.exists(model_path):
-            logger.error(f"Model file not found: {model_path}")
-            return False
-            
-        if not os.path.exists(features_path):
-            logger.error(f"Features file not found: {features_path}")
-            return False
         
         model = joblib.load(model_path)
         with open(features_path, 'r') as f:
             features_dict = json.load(f)
             
-        logger.info(f"Model loaded successfully: {model.n_features_in_} features expected")
-        logger.info(f"Features config loaded: {len(features_dict.get('feature_columns', []))} columns")
+        logger.info("Model and Features loaded successfully")
         model_ready = True
         return True
     except Exception as e:
-        logger.error(f"Model load failed: {str(e)}", exc_info=True)
+        logger.error(f"Model load failed: {str(e)}")
         model_ready = False
         return False
 
