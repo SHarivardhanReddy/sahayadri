@@ -34,8 +34,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 def load_model():
     global model, features_dict, model_ready
     try:
-        model_path = os.path.join(SCRIPT_DIR, 'fitness_model.joblib')
-        features_path = os.path.join(SCRIPT_DIR, 'model_features.json')
+        model_path = 'fitness_model.joblib'
+        features_path = 'model_features.json'
         
         if not os.path.exists(model_path):
             logger.error(f"Model file not found: {model_path}")
