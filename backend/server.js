@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const { PythonShell } = require('python-shell');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
@@ -23,15 +23,24 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch(err => console.log("❌ DB Error:", err));
 
-// --- EMAIL CONFIGURATION (Resend) ---
-const resend = new Resend(process.env.RESEND_API_KEY);
+// --- EMAIL CONFIGURATION (Nodemailer with OAuth2) ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        type: 'OAuth2',
+        user: process.env.GMAIL_USER,
+        clientId: process.env.CLIENT_ID,
+        clientSecret: process.env.CLIENT_SECRET,
+        refreshToken: process.env.REFRESH_TOKEN,
+    },
+});
 
 // Verify email configuration on startup
-if (!process.env.RESEND_API_KEY) {
-    console.log('⚠️  RESEND_API_KEY not set in environment variables');
-    console.log('Email service will not work. Add RESEND_API_KEY to .env file');
+if (!process.env.GMAIL_USER || !process.env.CLIENT_ID || !process.env.CLIENT_SECRET || !process.env.REFRESH_TOKEN) {
+    console.log('⚠️  Gmail OAuth2 credentials not set in environment variables');
+    console.log('Email service will not work. Add GMAIL_USER, CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN to .env file');
 } else {
-    console.log('✅ Email service ready - Resend API configured');
+    console.log('✅ Email service ready - Nodemailer OAuth2 configured');
 }
 
 // --- OTP STORAGE WITH EXPIRATION ---
@@ -42,28 +51,27 @@ const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 const sendOtpEmail = async (email, otp) => {
     try {
         console.log(`📧 Attempting to send OTP to ${email}...`);
-        const { data, error } = await resend.emails.send({
-            from: 'onboarding@resend.dev',
+        const mailOptions = {
+            from: `"Sahayadri Health" <${process.env.GMAIL_USER}>`,
             to: email,
-            subject: 'Your Sahayadri Health Record OTP',
+            subject: "Your Login OTP - Digital Health Record System",
+            text: `Your one-time password is ${otp}. It will expire in 10 minutes.`,
             html: `
-                <div style="font-family: sans-serif; padding: 20px;">
-                    <h2>Security Verification</h2>
-                    <p>Your one-time password (OTP) is: <strong style="font-size: 1.5em; color: #007bff;">${otp}</strong></p>
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: #2c3e50;">Sahayadri Health System</h2>
+                    <p>Use the following OTP to complete your login:</p>
+                    <h1 style="color: #3498db; letter-spacing: 5px;">${otp}</h1>
                     <p>This code will expire in 10 minutes.</p>
+                    <p>If you did not request this, please ignore this email.</p>
                 </div>
-            `
-        });
+            `,
+        };
 
-        if (error) {
-            console.error('❌ Resend Error:', error);
-            return false;
-        }
-
-        console.log('✅ Email sent successfully:', data.id);
+        const result = await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully:', result.messageId);
         return true;
-    } catch (err) {
-        console.error('❌ System Error:', err);
+    } catch (error) {
+        console.error('❌ Nodemailer OAuth2 Error:', error);
         return false;
     }
 }; 
