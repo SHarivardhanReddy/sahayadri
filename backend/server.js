@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 const { PythonShell } = require('python-shell');
 const Worker = require('./models/Worker');
 const Doctor = require('./models/Doctor');
@@ -23,27 +23,27 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch(err => console.log("❌ DB Error:", err));
 
-// --- EMAIL CONFIGURATION (Nodemailer with OAuth2) ---
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    pool: true, // Use pooling to keep the connection open
-    auth: {
-        type: 'OAuth2',
-        user: process.env.GMAIL_USER,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-    },
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000, // 10 seconds
-});
+// --- EMAIL CONFIGURATION (Gmail API) ---
+const initializeGmailClient = () => {
+    const oAuth2Client = new google.auth.OAuth2(
+        process.env.CLIENT_ID,
+        process.env.CLIENT_SECRET,
+        'https://developers.google.com/oauthplayground'
+    );
+
+    oAuth2Client.setCredentials({
+        refresh_token: process.env.REFRESH_TOKEN,
+    });
+
+    return google.gmail({ version: 'v1', auth: oAuth2Client });
+};
 
 // Verify email configuration on startup
 if (!process.env.GMAIL_USER || !process.env.CLIENT_ID || !process.env.CLIENT_SECRET || !process.env.REFRESH_TOKEN) {
     console.log('⚠️  Gmail OAuth2 credentials not set in environment variables');
     console.log('Email service will not work. Add GMAIL_USER, CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN to .env file');
 } else {
-    console.log('✅ Email service ready - Nodemailer OAuth2 configured');
+    console.log('✅ Email service ready - Gmail API configured');
 }
 
 // --- OTP STORAGE WITH EXPIRATION ---
@@ -54,27 +54,52 @@ const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
 const sendOtpEmail = async (email, otp) => {
     try {
         console.log(`📧 Attempting to send OTP to ${email}...`);
-        const mailOptions = {
-            from: `"Sahayadri Health" <${process.env.GMAIL_USER}>`,
-            to: email,
-            subject: "Your Login OTP - Digital Health Record System",
-            text: `Your one-time password is ${otp}. It will expire in 10 minutes.`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
-                    <h2 style="color: #2c3e50;">Sahayadri Health System</h2>
-                    <p>Use the following OTP to complete your login:</p>
-                    <h1 style="color: #3498db; letter-spacing: 5px;">${otp}</h1>
-                    <p>This code will expire in 10 minutes.</p>
-                    <p>If you did not request this, please ignore this email.</p>
-                </div>
-            `,
-        };
+        
+        const gmail = initializeGmailClient();
 
-        const result = await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent successfully:', result.messageId);
+        // Create the email content
+        const subject = 'Your Login OTP - Digital Health Record System';
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
+                <h2 style="color: #2c3e50;">Sahayadri Health System</h2>
+                <p>Use the following OTP to complete your login:</p>
+                <h1 style="color: #3498db; letter-spacing: 5px;">${otp}</h1>
+                <p>This code will expire in 10 minutes.</p>
+                <p>If you did not request this, please ignore this email.</p>
+            </div>
+        `;
+
+        // Encode email in base64
+        const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+        const messageParts = [
+            `To: ${email}`,
+            'Content-Type: text/html; charset=utf-8',
+            'MIME-Version: 1.0',
+            `Subject: ${utf8Subject}`,
+            'From: "Sahayadri Health" <' + process.env.GMAIL_USER + '>',
+            '',
+            htmlContent,
+        ];
+        const message = messageParts.join('\n');
+        const encodedMessage = Buffer.from(message)
+            .toString('base64')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+
+        // Send via Gmail API
+        const result = await gmail.users.messages.send({
+            userId: 'me',
+            requestBody: {
+                raw: encodedMessage,
+            },
+        });
+
+        console.log('✅ Email sent successfully:', result.data.id);
         return true;
     } catch (error) {
-        console.error('❌ Nodemailer OAuth2 Error:', error);
+        console.error('❌ Gmail API Error:', error.message);
+        console.error('Full error:', error);
         return false;
     }
 }; 

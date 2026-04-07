@@ -83,7 +83,7 @@ Server will run on `http://localhost:5000` (default port)
 Backend (Express.js)
 ├── API Server (Port 5000)
 ├── MongoDB Connection
-├── Email Service (Nodemailer)
+├── Email Service (Gmail API)
 ├── AI Model Integration (HTTP calls to Flask)
 └── Models/
     ├── Doctor Schema
@@ -395,34 +395,47 @@ Submit health data and get fitness assessment.
 
 ## 📧 Email Setup
 
-### Resend Configuration
+### Gmail API Configuration
 
-1. **Sign up at Resend:** https://resend.com
-2. **Get API Key:**
-   - Navigate to https://resend.com/api-keys
-   - Click "Create API Key"
-   - Copy the generated key
+The backend uses **Gmail API** for sending OTP emails. This approach:
+- ✅ Works perfectly on Railway (no port blocking)
+- ✅ Uses OAuth2 for secure authentication
+- ✅ Sends emails from your own Gmail account
+- ✅ More reliable than SMTP
 
-3. **Add to `.env`:**
+#### Required Environment Variables
+
 ```env
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
+GMAIL_USER=your-email@gmail.com
+CLIENT_ID=your-client-id.apps.googleusercontent.com
+CLIENT_SECRET=your-client-secret
+REFRESH_TOKEN=your-refresh-token
 ```
 
-### How Emails Work
+#### Setup Instructions
 
-- Resend handles all email delivery (no Gmail setup needed)
-- Emails are sent from `onboarding@resend.dev` by default
-- Later you can configure custom domains in Resend dashboard
-- All OTP emails go through Resend API
+**Full setup guide:** See [GMAIL_API_SETUP.md](../GMAIL_API_SETUP.md)
 
-### Testing Email Service
+**Quick steps:**
+1. Create Google Cloud project
+2. Enable Gmail API
+3. Create OAuth2 credentials
+4. Get refresh token via OAuth Playground
+5. Add credentials to `.env`
 
-The backend will log when Resend is configured:
+#### Testing Email Service
+
+The backend will log when Gmail API is configured:
 ```
-✅ Email service ready - Resend API configured
+✅ Email service ready - Gmail API configured
 ```
 
-If you see a warning about missing `RESEND_API_KEY`, add it to your `.env` file.
+If you see a warning:
+```
+⚠️  Gmail OAuth2 credentials not set in environment variables
+```
+
+Make sure all 4 environment variables are in your `.env` file.
 
 ## 🤖 AI Model Integration
 How It Works
